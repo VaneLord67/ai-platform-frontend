@@ -1,14 +1,14 @@
 <template>
   <el-container>
-    <el-header >
+    <el-header>
       <div class="navigation-header">
-        <span class="navigation-title">面向多AI模型部署管理的微服务平台</span>
+        <span class="navigation-title"><router-link to="/" tag="span">面向多AI模型部署管理的微服务平台</router-link></span>
         <span class="navigation-right">注销</span>
       </div>
     </el-header>
     <el-container style="border-right: 1px solid #eee">
       <el-aside width="200px">
-        <el-menu :default-openeds="['1', '2']">
+        <el-menu :default-openeds="['1', '2']" :router="true">
           <el-submenu index="1">
             <template slot="title"
               ><i class="el-icon-user-solid"></i>用户</template
@@ -20,19 +20,20 @@
           <el-submenu index="2">
             <template slot="title"><i class="el-icon-cloudy"></i>AI</template>
             <el-menu-item-group>
-              <el-menu-item index="2-1">检测</el-menu-item>
-              <el-menu-item index="2-2">识别</el-menu-item>
-              <el-menu-item index="2-3">跟踪</el-menu-item>
+              <el-menu-item index="/detection">检测</el-menu-item>
+              <el-menu-item index="/recognition">识别</el-menu-item>
+              <el-menu-item index="/track">跟踪</el-menu-item>
             </el-menu-item-group>
           </el-submenu>
         </el-menu>
       </el-aside>
-      <el-main>主界面布局</el-main>
+      <el-main><slot></slot></el-main>
     </el-container>
   </el-container>
 </template>
   
-  <script>
+<script>
+import { getToken, removeToken } from "@/utils/storage.js";
 export default {
   name: "Navigation",
 
@@ -40,7 +41,18 @@ export default {
     return {};
   },
 
-  methods: {},
+  methods: {
+    logout() {
+      removeToken()
+    },
+  },
+
+  mounted() {
+    let token = getToken()
+    if (token == "" || token == null || token == undefined) {
+      this.showLogReg = true;
+    } 
+  }
 };
 </script>
   
@@ -55,6 +67,7 @@ export default {
   font-size: large;
   text-align: center;
   margin-left: 40%;
+  cursor: pointer;
 }
 
 .navigation-right {
@@ -68,5 +81,4 @@ export default {
 .el-aside {
   color: #333;
 }
-
 </style>

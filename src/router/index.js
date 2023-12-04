@@ -2,6 +2,9 @@ import VueRouter from 'vue-router'
 
 const HomePage = () => import('../components/home/HomePage.vue')
 const Login = () => import('../components/user/Login.vue')
+const Detection = () => import('../components/ai/Detection.vue')
+const Recognition = () => import('../components/ai/Recognition.vue')
+const Track = () => import('../components/ai/Track.vue')
 
 //创建并暴露一个路由器
 const router = new VueRouter({
@@ -17,6 +20,21 @@ const router = new VueRouter({
 			path: '/login',
 			component: Login,
 		},
+		{
+			name: 'detection',
+			path: '/detection',
+			component: Detection,
+		},
+		{
+			name: 'recognition',
+			path: '/recognition',
+			component: Recognition,
+		},
+		{
+			name: 'track',
+			path: '/track',
+			component: Track,
+		}
 	]
 })
 
