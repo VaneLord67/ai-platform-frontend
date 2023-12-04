@@ -20,7 +20,7 @@
         </el-form-item>
         <el-form-item class="login-button">
           <el-button type="primary" @click="handleLogin">登录</el-button>
-          <el-button type="primary" @click="handleLogin">注册</el-button>
+          <el-button type="primary" @click="handleRegister">注册</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -28,6 +28,7 @@
 </template>
 
 <script>
+import { setToken } from "@/utils/storage.js";
 export default {
   name: "Login",
 
@@ -48,7 +49,72 @@ export default {
 
   methods: {
     handleLogin() {
-      
+      let username = this.loginForm.username
+      let password = this.loginForm.password
+      if (username == "" || password == "") {
+        return alert("输入为空")
+      }
+      let loginDto = {
+        username: username,
+        password: password,
+      };
+      this.$axios.post("/user/login", loginDto).then((res) => {
+        if (res && res.code != 1) {
+          this.$message({
+            type: "warning",
+            message: "用户名或密码错误!",
+          });
+          return;
+        }
+        let jwt = res.data;
+        if (!jwt) {
+          this.$message({
+            type: "error",
+            message: "用户名或密码错误!",
+          });
+          return;
+        }
+        setToken(res.data);
+        this.$message({
+          type: "success",
+          message: "登录成功!",
+        });
+        this.$router.push({ path: "/" });
+      });
+    },
+    handleRegister() {
+      let username = this.loginForm.username
+      let password = this.loginForm.password
+      if (username == "" || password == "") {
+        return alert("输入为空")
+      }
+      let registerDto = {
+        username: username,
+        password: password,
+      };
+      this.$axios.post("/user/register", registerDto).then((res) => {
+        if (res && res.code != 1) {
+          this.$message({
+            type: "warning",
+            message: "注册失败!",
+          });
+          return;
+        }
+        let jwt = res.data;
+        if (!jwt) {
+          this.$message({
+            type: "error",
+            message: "注册失败!",
+          });
+          return;
+        }
+        setToken(res.data);
+        this.$message({
+          type: "success",
+          message: "注册成功!",
+        });
+        this.$router.push({ path: "/" });
+      });
     },
   },
 };
