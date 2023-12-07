@@ -1,7 +1,24 @@
 <template>
   <navigation>
-    <h1>测试模拟</h1>
-    <el-upload
+    <h1 style="text-align: center;">测试模拟</h1>
+    <div class="flex-container">
+      <el-form ref="form" :model="form" class="input-form">
+        <el-form-item label="图片url">
+          <el-input v-model="form.url"></el-input>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="modelCall">调用</el-button>
+        </el-form-item>
+      </el-form>
+  
+      <el-image :src="output_url" class="output-img">
+        <div slot="error" class="image-slot">
+          检测结果
+        </div>
+      </el-image>
+    </div>
+
+    <!-- <el-upload
       class="upload-demo"
       action="https://jsonplaceholder.typicode.com/posts/"
       :on-preview="handlePreview"
@@ -13,12 +30,12 @@
       <div slot="tip" class="el-upload__tip">
         只能上传jpg/png文件，且不超过500kb
       </div>
-    </el-upload>
+    </el-upload> -->
   </navigation>
 </template>
 
 <script>
-import Navigation from '../common/Navigation.vue'
+import Navigation from "../common/Navigation.vue";
 export default {
   name: "Detection",
   components: {
@@ -26,31 +43,53 @@ export default {
   },
   data() {
     return {
-      fileList: [
-        {
-          name: "food.jpeg",
-          url: "https://fuss10.elemecdn.com/3/63/4e7f3a15429bfda99bce42a18cdd1jpeg.jpeg?imageMogr2/thumbnail/360x360/format/webp/quality/100",
-        },
-        {
-          name: "food2.jpeg",
-          url: "https://fuss10.elemecdn.com/3/63/4e7f3a15429bfda99bce42a18cdd1jpeg.jpeg?imageMogr2/thumbnail/360x360/format/webp/quality/100",
-        },
-      ],
+      form: {
+        url: "",
+      },
+      output_url: "",
     };
   },
   methods: {
-    handleRemove(file, fileList) {
-      console.log(file, fileList);
-    },
-    handlePreview(file) {
-      console.log(file);
+    modelCall() {
+      let dto = {
+        hyperparameter: {},
+        supportInput: {
+          type: "single_picture_url",
+          value: this.form.url,
+        },
+      }
+      this.$axios.post("/model/detection/call", dto).then((res) => {
+        if (res && res.code != 1) {
+          this.$message({
+            type: "warning",
+            message: "调用失败!",
+          });
+          return;
+        }
+        this.output_url = res.data.url
+      });
     },
   },
 };
 </script>
 
 <style>
-.upload-demo {
-  margin-right: 40%;
+.flex-container {
+  display: flex;
+}
+.input-form {
+  width: 48%;
+  margin-right: 50px;
+}
+.output-img {
+  height: 400px;
+  width: 400px;
+  border: 1px solid;
+}
+.image-slot {
+  display: flex;
+  align-items: center; /* 垂直居中 */
+  justify-content: center; /* 水平居中 */
+  height: 100%; /* 使容器高度占满 el-image，确保垂直居中生效 */
 }
 </style>
