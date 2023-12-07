@@ -3,7 +3,8 @@
     <el-header>
       <div class="navigation-header">
         <span class="navigation-title"><router-link to="/" tag="span">面向多AI模型部署管理的微服务平台</router-link></span>
-        <span class="navigation-right">注销</span>
+        <router-link v-show="showLogReg" to="/login" tag="span" class="navigation-right">登录/注册</router-link>
+        <span @click="logout()" v-show="!showLogReg" class="navigation-right">注销</span>
       </div>
     </el-header>
     <el-container style="border-right: 1px solid #eee">
@@ -38,12 +39,15 @@ export default {
   name: "Navigation",
 
   data() {
-    return {};
+    return {
+      showLogReg: true,
+    };
   },
 
   methods: {
     logout() {
       removeToken()
+      this.$router.push({ path: "/login" });
     },
   },
 
@@ -51,7 +55,9 @@ export default {
     let token = getToken()
     if (token == "" || token == null || token == undefined) {
       this.showLogReg = true;
-    } 
+    } else {
+      this.showLogReg = false;
+    }
   }
 };
 </script>

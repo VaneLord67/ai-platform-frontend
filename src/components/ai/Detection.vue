@@ -37,6 +37,11 @@
     <el-button type="danger" round size="small" @click="stop()">停止一个实例</el-button>
     <el-button type="danger" round size="small" @click="stopAll()">一键停止所有实例</el-button>
 
+    <div style="font-weight: bold; padding-top: 20px; padding-bottom: 20px;">
+      上传
+    </div>
+    <UploadFile></UploadFile>
+
     <div style="font-weight: bold; padding-top: 20px; padding-bottom: 20px; margin-top: 40px">
       测试模拟
     </div>
@@ -100,10 +105,11 @@
 
 <script>
 import Navigation from "../common/Navigation.vue";
+import UploadFile from "../common/UploadFile.vue";
 export default {
   name: "Detection",
   components: {
-    Navigation,
+    Navigation, UploadFile
   },
   data() {
     return {
