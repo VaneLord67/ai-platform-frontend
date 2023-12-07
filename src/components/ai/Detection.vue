@@ -1,6 +1,9 @@
 <template>
   <navigation>
-    <el-descriptions title="服务信息">
+    <div style="font-weight: bold; padding-bottom: 20px;">
+      服务信息
+    </div>
+    <el-descriptions v-show="showServiceInfo">
       <el-descriptions-item label="适用领域">{{ modelField }}</el-descriptions-item>
       <el-descriptions-item label="模型名">{{ modelName }}</el-descriptions-item>
     </el-descriptions>
@@ -118,9 +121,15 @@ export default {
     };
   },
   computed: {
+    showServiceInfo: function() {
+      if (this.services.length == 0) {
+        return false;
+      }
+      return true;
+    },
     callButtonText: function() {
       if (this.callDisabled) {
-        return "无服务可运行，不可调用";
+        return "无正在运行实例，不可调用";
       }
       return "调用";
     },
