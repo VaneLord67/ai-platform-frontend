@@ -82,24 +82,35 @@
         </el-form-item>
       </el-form>
 
-      <el-image :src="output_url" class="output-img">
+      
+    </div>
+    
+    <div v-if="this.output_urls.length > 0">
+      <el-image v-for="(output_url, index) in this.output_urls" :key="index" :src="output_url" class="output-img">
+        <div slot="error" class="image-slot">检测结果</div>
+      </el-image>
+    </div>
+    <div v-else>
+      <el-image :src="''" class="output-img">
         <div slot="error" class="image-slot">检测结果</div>
       </el-image>
     </div>
 
-    <!-- <el-upload
-      class="upload-demo"
-      action="https://jsonplaceholder.typicode.com/posts/"
-      :on-preview="handlePreview"
-      :on-remove="handleRemove"
-      :file-list="fileList"
-      list-type="picture"
-    >
-      <el-button size="small" type="primary">点击上传</el-button>
-      <div slot="tip" class="el-upload__tip">
-        只能上传jpg/png文件，且不超过500kb
+    <div v-for="(frame, index) in this.frames" :key="index" >
+      <div style="font-weight: bold; padding-bottom: 50px; padding-top: 50px;">
+        {{ 'frame' + index + ':' }}
       </div>
-    </el-upload> -->
+      <el-descriptions :title="'box' + boxIndex + ':'" v-for="(box, boxIndex) in frame" :key="boxIndex">
+        <el-descriptions-item label="left">{{ box.left }}</el-descriptions-item>
+        <el-descriptions-item label="right">{{ box.right }}</el-descriptions-item>
+        <el-descriptions-item label="bottom">{{ box.bottom }}</el-descriptions-item>
+        <el-descriptions-item label="top">{{ box.top }}</el-descriptions-item>
+        <el-descriptions-item label="confidence">{{ box.confidence }}</el-descriptions-item>
+        <el-descriptions-item label="class_name">{{ box.class_name }}</el-descriptions-item>
+      </el-descriptions>
+    </div>
+
+    
   </navigation>
 </template>
 
@@ -122,7 +133,8 @@ export default {
         supportInput: "单张图片输入",
         hyperparameters: [],
       },
-      output_url: "",
+      output_urls: [],
+      frames: [],
       services: [],
     };
   },
@@ -190,11 +202,13 @@ export default {
   methods: {
     modelCall() {
       this.callLoading = true;
+      this.output_urls = [];
+      this.frames = [];
       let dto = {
         hyperparameters: this.form.hyperparameters,
         supportInput: {
           type: "single_picture_url",
-          value: this.form.url,
+          value: this.form.url.trim(),
         },
       };
       this.$axios.post("/model/detection/call", dto).then((res) => {
@@ -205,7 +219,8 @@ export default {
           });
           return;
         }
-        this.output_url = res.data.url;
+        this.output_urls = res.data.urls;
+        this.frames = res.data.frames;
       }).finally(() => {
         this.callLoading = false;
       });
