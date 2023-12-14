@@ -4,7 +4,7 @@
       :on-preview="handlePreview" :auto-upload="false" :on-remove="handleRemove" :file-list="fileList"
       list-type="picture">
       <el-button size="small" type="primary">选择图片</el-button>
-      <div slot="tip" class="el-upload__tip">只能上传jpg/png文件，且不超过500kb，文件名不包含中文</div>
+      <div slot="tip" class="el-upload__tip">可上传jpg图片 / h264编码的mp4视频，文件名不包含中文</div>
     </el-upload>
     <el-button size="small" type="success" @click="uploadButtonClick()">上传到服务器</el-button>
 
@@ -12,6 +12,7 @@
       <!-- 在div中展示键和值 -->
       <p>文件名: {{ filename }}</p>
       <p>URL: {{ url }}</p>
+      <el-button type="primary" @click="copy(url)">复制</el-button>
     </div>
 
   </div>
@@ -69,6 +70,30 @@ export default {
     },
     uploadButtonClick() {
       this.$refs.upload.submit();
+    },
+    copy(url) {
+      // 创建一个input框
+      const input = document.createElement('input')
+      // 将指定的DOM节点添加到body的末尾
+      document.body.appendChild(input)
+      // 设置input框的value值为复制的值
+      const address = url
+      input.setAttribute('value', address)
+      // 选取文本域中的内容
+      input.select()
+      // copy的意思是拷贝当前选中内容到剪贴板
+      // document.execCommand（）方法操纵可编辑内容区域的元素
+      // 返回值为一个Boolean，如果是 false 则表示操作不被支持或未被启用
+      if (document.execCommand('copy')) {
+        document.execCommand('copy')
+      }
+      // 删除这个节点
+      document.body.removeChild(input)
+      // 弹窗：复制成功
+      this.$message({
+        type: "success",
+        message: "复制成功!",
+      });
     },
   },
 }

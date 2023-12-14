@@ -87,15 +87,43 @@
       </el-image>
     </div>
 
-    <!-- <video v-show="form.supportInput === '视频输入'" controls width="100%" height="auto">
-      <source v-for="(output_url, index) in this.output_urls" :key="index" :src="output_url" type="video/mp4">
-    </video> -->
-
     <video v-show="form.supportInput === '视频输入'" :src="video_src" controls width="auto" height="auto">
     </video>
 
-    <div v-for="(frame, index) in this.frames" :key="index" >
-      <div style="font-weight: bold; padding-bottom: 50px; padding-top: 50px;">
+    <!-- <div class="block">
+      <span class="demonstration">Click 指示器触发</span>
+      <el-carousel trigger="click" :autoplay='false' height="5000px">
+        <el-carousel-item v-for="(frame, index) in this.frames" :key="index" >
+          <div style="font-weight: bold; padding-bottom: 50px; padding-top: 50px;">
+            {{ 'frame' + index + ':' }}
+          </div>
+          <el-descriptions :title="'box' + boxIndex + ':'" v-for="(box, boxIndex) in frame" :key="boxIndex">
+            <el-descriptions-item label="left">{{ box.left }}</el-descriptions-item>
+            <el-descriptions-item label="right">{{ box.right }}</el-descriptions-item>
+            <el-descriptions-item label="bottom">{{ box.bottom }}</el-descriptions-item>
+            <el-descriptions-item label="top">{{ box.top }}</el-descriptions-item>
+            <el-descriptions-item label="confidence">{{ box.confidence }}</el-descriptions-item>
+            <el-descriptions-item label="class_name">{{ box.class_name }}</el-descriptions-item>
+          </el-descriptions>
+        </el-carousel-item>
+      </el-carousel>
+    </div> -->
+
+    <!-- <el-collapse>
+      <el-collapse-item class="box-css" v-for="(frame, index) in this.frames" :key="index" :title="'frame' + index + ':'">
+        <el-descriptions :title="'box' + boxIndex + ':'" v-for="(box, boxIndex) in frame" :key="boxIndex">
+          <el-descriptions-item label="left">{{ box.left }}</el-descriptions-item>
+          <el-descriptions-item label="right">{{ box.right }}</el-descriptions-item>
+          <el-descriptions-item label="bottom">{{ box.bottom }}</el-descriptions-item>
+          <el-descriptions-item label="top">{{ box.top }}</el-descriptions-item>
+          <el-descriptions-item label="confidence">{{ box.confidence }}</el-descriptions-item>
+          <el-descriptions-item label="class_name">{{ box.class_name }}</el-descriptions-item>
+        </el-descriptions>
+      </el-collapse-item>
+    </el-collapse> -->
+
+    <div v-for="(frame, index) in this.frames" :key="index" style="border: 1px solid; padding: 5px; margin-bottom: 10px;">
+      <div style="font-weight: bold; padding-bottom: 30px; padding-top: 10px;">
         {{ 'frame' + index + ':' }}
       </div>
       <el-descriptions :title="'box' + boxIndex + ':'" v-for="(box, boxIndex) in frame" :key="boxIndex">
@@ -345,5 +373,9 @@ export default {
 .service-statistic {
   display: flex;
   justify-content: center; /* 水平居中 */
+}
+.box-css::v-deep.el-collapse-item__header {
+  font-size: 20px;
+  font-weight: 700;
 }
 </style>
