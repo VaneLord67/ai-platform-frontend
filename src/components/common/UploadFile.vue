@@ -33,6 +33,7 @@ export default {
       console.log(file);
     },
     handleFileUpload(file) {
+      this.fileUrls = {};
       // console.log(file);
       let get_presigned_url_param = {
         objectName: file.file.name
