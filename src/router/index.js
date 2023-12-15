@@ -5,6 +5,7 @@ const Login = () => import('../components/user/Login.vue')
 const Detection = () => import('../components/ai/Detection.vue')
 const Recognition = () => import('../components/ai/Recognition.vue')
 const Track = () => import('../components/ai/Track.vue')
+const Monitor = () => import('../components/monitor/Monitor.vue')
 
 //创建并暴露一个路由器
 const router = new VueRouter({
@@ -34,6 +35,11 @@ const router = new VueRouter({
 			name: 'track',
 			path: '/track',
 			component: Track,
+		},
+		{
+			name: 'monitor',
+			path: '/monitor',
+			component: Monitor,
 		}
 	]
 })

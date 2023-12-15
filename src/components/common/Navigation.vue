@@ -9,7 +9,7 @@
     </el-header>
     <el-container style="border-right: 1px solid #eee">
       <el-aside width="200px">
-        <el-menu :default-openeds="['1', '2']" :router="true">
+        <el-menu :default-openeds="['1', '2', '3']" :router="true">
           <el-submenu index="1">
             <template slot="title"
               ><i class="el-icon-user-solid"></i>用户</template
@@ -22,8 +22,16 @@
             <template slot="title"><i class="el-icon-cloudy"></i>AI</template>
             <el-menu-item-group>
               <el-menu-item index="/detection">检测</el-menu-item>
-              <el-menu-item index="/recognition">识别</el-menu-item>
+              <el-menu-item index="/recognition">分类</el-menu-item>
               <el-menu-item index="/track">跟踪</el-menu-item>
+            </el-menu-item-group>
+          </el-submenu>
+          <el-submenu index="3">
+            <template slot="title"
+              ><i class="el-icon-monitor"></i>监控</template
+            >
+            <el-menu-item-group>
+              <el-menu-item index="/monitor">请求与响应</el-menu-item>
             </el-menu-item-group>
           </el-submenu>
         </el-menu>
