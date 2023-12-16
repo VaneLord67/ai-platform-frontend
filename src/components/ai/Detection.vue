@@ -90,38 +90,6 @@
     <video v-show="form.supportInput === '视频输入'" :src="video_src" controls width="auto" height="auto">
     </video>
 
-    <!-- <div class="block">
-      <span class="demonstration">Click 指示器触发</span>
-      <el-carousel trigger="click" :autoplay='false' height="5000px">
-        <el-carousel-item v-for="(frame, index) in this.frames" :key="index" >
-          <div style="font-weight: bold; padding-bottom: 50px; padding-top: 50px;">
-            {{ 'frame' + index + ':' }}
-          </div>
-          <el-descriptions :title="'box' + boxIndex + ':'" v-for="(box, boxIndex) in frame" :key="boxIndex">
-            <el-descriptions-item label="left">{{ box.left }}</el-descriptions-item>
-            <el-descriptions-item label="right">{{ box.right }}</el-descriptions-item>
-            <el-descriptions-item label="bottom">{{ box.bottom }}</el-descriptions-item>
-            <el-descriptions-item label="top">{{ box.top }}</el-descriptions-item>
-            <el-descriptions-item label="confidence">{{ box.confidence }}</el-descriptions-item>
-            <el-descriptions-item label="class_name">{{ box.class_name }}</el-descriptions-item>
-          </el-descriptions>
-        </el-carousel-item>
-      </el-carousel>
-    </div> -->
-
-    <!-- <el-collapse>
-      <el-collapse-item class="box-css" v-for="(frame, index) in this.frames" :key="index" :title="'frame' + index + ':'">
-        <el-descriptions :title="'box' + boxIndex + ':'" v-for="(box, boxIndex) in frame" :key="boxIndex">
-          <el-descriptions-item label="left">{{ box.left }}</el-descriptions-item>
-          <el-descriptions-item label="right">{{ box.right }}</el-descriptions-item>
-          <el-descriptions-item label="bottom">{{ box.bottom }}</el-descriptions-item>
-          <el-descriptions-item label="top">{{ box.top }}</el-descriptions-item>
-          <el-descriptions-item label="confidence">{{ box.confidence }}</el-descriptions-item>
-          <el-descriptions-item label="class_name">{{ box.class_name }}</el-descriptions-item>
-        </el-descriptions>
-      </el-collapse-item>
-    </el-collapse> -->
-
     <div v-for="(frame, index) in this.frames" :key="index" style="border: 1px solid; padding: 5px; margin-bottom: 10px;">
       <div style="font-weight: bold; padding-bottom: 30px; padding-top: 10px;">
         {{ 'frame' + index + ':' }}
@@ -274,6 +242,10 @@ export default {
         }
         if (this.services.length > 0) {
           this.form.hyperparameters = this.services[0].model.hyperparameters;
+          this.form.hyperparameters.map(e => {
+            e.value = e.default;
+            return e;
+          });
           this.modelName = this.services[0].model.name;
           this.modelField = this.services[0].model.field;
           this.callDisabled = false;
