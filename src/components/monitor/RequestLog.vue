@@ -1,6 +1,7 @@
 <template>
   <navigation>
-    <el-table :data="tableData" border style="width: 100%">
+    <el-table v-loading="loading" element-loading-text="数据加载中"
+      element-loading-spinner="el-icon-loading" :data="tableData" border style="width: 100%">
       <el-table-column label="ID" prop="id"></el-table-column>
       <el-table-column label="用户ID" prop="user_id"></el-table-column>
       <el-table-column label="方法" prop="method"></el-table-column>
@@ -40,6 +41,7 @@ export default {
         pageSize: 5,
         total: 0,
       },
+      loading: true,
     };
   },
 
@@ -62,6 +64,7 @@ export default {
           e.time = dateTimeString;
           return e;
         });
+        this.loading = false;
       })
     },
     handleSizeChange(val) {

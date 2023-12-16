@@ -1,17 +1,19 @@
 <template>
   <navigation>
-    <div class="load-flex-container">
+    <div v-loading="load.loading" element-loading-text="数据加载中"
+      element-loading-spinner="el-icon-loading"
+      class="load-flex-container">
       <div class="load-container">
         <p class="load-text">CPU负载</p>
-        <el-progress type="circle" :percentage="load.cpuPercent"></el-progress>
+        <el-progress type="dashboard" :percentage="load.cpuPercent"></el-progress>
       </div>
       <div class="load-container">
         <p class="load-text">GPU负载</p>
-        <el-progress type="circle" :percentage="load.gpuPercent"></el-progress>
+        <el-progress type="dashboard" :percentage="load.gpuPercent"></el-progress>
       </div>
       <div class="load-container">
         <p class="load-text">内存负载</p>
-        <el-progress type="circle" :percentage="load.memoryPercent"></el-progress>
+        <el-progress type="dashboard" :percentage="load.memoryPercent"></el-progress>
       </div>
     </div>
   </navigation>
@@ -42,6 +44,7 @@ export default {
         cpuPercent: 0,
         memoryPercent: 0,
         gpuPercent: 0,
+        loading: true,
       },
     };
   },
@@ -62,6 +65,7 @@ export default {
           this.load.cpuPercent = parseFloat(res.data.cpu_percent.toFixed(2));
           this.load.gpuPercent = parseFloat(res.data.gpu_percent[0].toFixed(2));
           this.load.memoryPercent = parseFloat(res.data.memory_percent.toFixed(2));
+          this.load.loading = false;
         }
       });
     }
