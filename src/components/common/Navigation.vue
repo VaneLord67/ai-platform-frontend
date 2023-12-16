@@ -12,7 +12,7 @@
         <el-menu :default-openeds="['1', '2', '3']" :router="true">
           <el-submenu index="1">
             <template slot="title"
-              ><i class="el-icon-user-solid"></i>用户</template
+              ><i class="el-icon-user"></i>用户</template
             >
             <el-menu-item-group>
               <el-menu-item index="1-1">权限分配</el-menu-item>
@@ -31,7 +31,8 @@
               ><i class="el-icon-monitor"></i>监控</template
             >
             <el-menu-item-group>
-              <el-menu-item index="/monitor">请求与响应</el-menu-item>
+              <el-menu-item index="/monitor/requestLog">请求与响应</el-menu-item>
+              <el-menu-item index="/monitor/load">硬件负载</el-menu-item>
             </el-menu-item-group>
           </el-submenu>
         </el-menu>

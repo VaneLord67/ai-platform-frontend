@@ -6,6 +6,7 @@
       <el-table-column label="方法" prop="method"></el-table-column>
       <el-table-column label="路径" prop="path"></el-table-column>
       <el-table-column label="状态码" prop="status_code"></el-table-column>
+      <el-table-column label="时间" prop="time" width="150"></el-table-column>
       <el-table-column label="响应时间" prop="duration"></el-table-column>
       <el-table-column label="响应JSON" prop="response_json" width="5000"></el-table-column>
     </el-table>
@@ -26,7 +27,7 @@
 <script>
 import Navigation from "../common/Navigation.vue";
 export default {
-  name: "Monitor",
+  name: "RequestLog",
   components: {
     Navigation,
   },
@@ -53,6 +54,14 @@ export default {
       }).then((res) => {
         this.pagination.total = res.data.total_num;
         this.tableData = res.data.data;
+        this.tableData.map(e => {
+          let date = new Date(e.time * 1000);
+          let dateString = date.toLocaleDateString();
+          let timeString = date.toLocaleTimeString();
+          let dateTimeString = dateString + ' ' + timeString;
+          e.time = dateTimeString;
+          return e;
+        });
       })
     },
     handleSizeChange(val) {
