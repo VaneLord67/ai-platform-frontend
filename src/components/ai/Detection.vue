@@ -31,15 +31,21 @@
         <!-- <el-form-item label="图片url">
           <el-input v-model="form.url"></el-input>
         </el-form-item> -->
+        
+        <div v-show="form.supportInput != '摄像头输入'">
+          url
+          <el-form-item
+            v-for="(url, index) in form.urls"
+            :label="url.name"
+            :key="url.key"
+            :prop="'urls.' + index + '.value'"
+          >
+            <el-input v-model="url.value"></el-input>
+          </el-form-item>
+        </div>
 
-        url
-        <el-form-item
-          v-for="(url, index) in form.urls"
-          :label="url.name"
-          :key="url.key"
-          :prop="'urls.' + index + '.value'"
-        >
-          <el-input v-model="url.value"></el-input>
+        <el-form-item v-show="form.supportInput === '摄像头输入'"  label="摄像头id">
+          <el-input v-model="form.cameraId"></el-input>
         </el-form-item>
 
         <el-form-item
@@ -65,29 +71,39 @@
               v-bind:disabled="!videoSupport"
               label="视频输入"
             ></el-radio>
+            <el-radio
+              v-bind:disabled="!cameraSupport"
+              label="摄像头输入"
+            ></el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="modelCall" :loading="callLoading" :disabled="callDisabled">{{ callButtonText }}</el-button>
           <el-button v-show="form.supportInput === '多张图片输入'" @click="addUrl">新增图片url</el-button>
+          <el-button v-show="form.supportInput === '摄像头输入'" @click="closeCamera">关闭摄像头</el-button>
         </el-form-item>
       </el-form>
 
       
     </div>
     
-    <div v-show="this.output_urls.length > 0 && form.supportInput != '视频输入'">
-      <el-image v-for="(output_url, index) in this.output_urls" :key="index" :src="output_url" class="output-img">
+    <div v-show="this.outputUrls.length > 0 && form.supportInput != '视频输入'">
+      <el-image v-for="(output_url, index) in this.outputUrls" :key="index" :src="output_url" class="output-img">
         <div slot="error" class="image-slot">检测结果</div>
       </el-image>
     </div>
-    <div v-show="this.output_urls.length == 0 && form.supportInput != '视频输入'">
+    <div v-show="this.outputUrls.length == 0 && form.supportInput != '视频输入' && form.supportInput !='摄像头输入'">
       <el-image :src="''" class="output-img">
         <div slot="error" class="image-slot">检测结果</div>
       </el-image>
     </div>
 
-    <video v-show="form.supportInput === '视频输入'" :src="video_src" controls width="auto" height="auto">
+    <el-image v-show="form.supportInput === '摄像头输入' && cameraData === ''" :src="''" class="output-img">
+        <div slot="error" class="image-slot">摄像头输出</div>
+    </el-image>
+    <img v-show="form.supportInput === '摄像头输入' && cameraData != ''" :src="cameraData" alt="Image">
+
+    <video v-show="form.supportInput === '视频输入'" :src="videoSrc" controls width="auto" height="auto">
     </video>
 
     <div v-for="(frame, index) in this.frames" :key="index" style="border: 1px solid; padding: 5px; margin-bottom: 10px;">
@@ -111,6 +127,7 @@
 <script>
 import Navigation from "../common/Navigation.vue";
 import UploadFile from "../common/UploadFile.vue";
+import { io } from "socket.io-client"
 export default {
   name: "Detection",
   components: {
@@ -127,11 +144,13 @@ export default {
         urls: [],
         supportInput: "单张图片输入",
         hyperparameters: [],
+        cameraId: 0,
       },
-      output_urls: [],
-      video_src: "",
+      outputUrls: [],
+      videoSrc: "",
       frames: [],
       services: [],
+      cameraData: "",
     };
   },
   computed: {
@@ -194,11 +213,20 @@ export default {
       }
       return false;
     },
+    cameraSupport: function() {
+      if (this.services.length == 0) {
+        return false;
+      }
+      if (this.services[0].model.support_input.includes("camera")) {
+        return true;
+      }
+      return false;
+    }
   },
   methods: {
     modelCall() {
       this.callLoading = true;
-      this.output_urls = [];
+      this.outputUrls = [];
       this.frames = [];
       let supportInput = {}
       // console.log(this.form.urls)
@@ -211,6 +239,9 @@ export default {
       } else if (this.form.supportInput == "视频输入") {
         supportInput.type = "video_url";
         supportInput.value = this.form.urls[0].value.trim();
+      } else if (this.form.supportInput == "摄像头输入") {
+        supportInput.type = "camera";
+        supportInput.value = this.form.cameraId;
       }
       let dto = {
         hyperparameters: this.form.hyperparameters,
@@ -224,12 +255,26 @@ export default {
           });
           return;
         }
-        this.output_urls = res.data.urls;
-        if (this.form.supportInput === "视频输入") {
-          this.video_src = this.output_urls[0];
+        if (this.form.supportInput == "摄像头输入") {
+          let namespace = res.data;
+          console.log("connect to:", this.$axios.defaults.baseURL + namespace)
+          const socket = io(this.$axios.defaults.baseURL + namespace);
+          this.socket = socket;
+          console.log("success connect ws")
+          socket.emit('camera_retrieve', "");
+          socket.on('camera_data', (msg) => {
+            this.cameraData = "data:image/jpeg;base64," + msg;
+            // console.log("receive msg:" + this.cameraData);
+            socket.emit('camera_retrieve', "");
+          });
+        } else {
+          this.outputUrls = res.data.urls;
+          if (this.form.supportInput === "视频输入") {
+            this.videoSrc = this.outputUrls[0];
+          }
+          this.frames = res.data.frames;
+          // console.log(this.outputUrls);
         }
-        this.frames = res.data.frames;
-        // console.log(this.output_urls);
       }).finally(() => {
         this.callLoading = false;
       });
@@ -312,6 +357,14 @@ export default {
         key: Date.now(),
       });
     },
+    closeCamera() {
+      if (this.socket) {
+        console.log("disconnect ws")
+        this.socket.disconnect();
+        this.socket = null;
+      }
+      this.cameraData = "";
+    },
   },
   mounted() {
     this.$nextTick(() => {
@@ -319,6 +372,10 @@ export default {
       this.addUrl();
       this.getDetectionServiceList();
     });
+  },
+
+  beforeDestroy() {
+    this.closeCamera();
   },
 };
 </script>
