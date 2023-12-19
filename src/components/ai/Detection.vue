@@ -221,7 +221,7 @@ export default {
         return true;
       }
       return false;
-    }
+    },
   },
   methods: {
     modelCall() {
