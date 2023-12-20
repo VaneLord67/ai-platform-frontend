@@ -69,6 +69,12 @@ export default {
         return {};
       }
     },
+    socket: {
+      type: Object,
+      default: function() {
+        return null;
+      }
+    }
   },
   data() {
     return {
@@ -149,12 +155,7 @@ export default {
       this.$emit('support-input-event', supportInput);
     },
     closeCamera() {
-      if (this.socket) {
-        console.log("disconnect ws")
-        this.socket.disconnect();
-        this.socket = null;
-      }
-      this.cameraData = "";
+      this.$emit("close-camera-event");
     },
   },
   mounted() {
