@@ -47,7 +47,7 @@
 
 <script>
 export default {
-  name: 'ModelCall',
+  name: 'ArgForm',
   props: {
     services: {
       type: Array,
@@ -63,23 +63,38 @@ export default {
       type: Boolean,
       default: false,
     },
+    form: {
+      type: Object,
+      default: function() {
+        return {};
+      }
+    },
   },
   data() {
     return {
-      form: {
-        url: "",
-        urls: [],
-        supportInput: "单张图片输入",
-        hyperparameters: [],
-        cameraId: 0,
-      },
+      
     }
   },
-  watch: {
-    form(newValue) {
-      this.$emit("form-event", newValue);
-    }
-  },
+  // watch: {
+  //   form(newValue) {
+  //     this.$emit("form-event", newValue);
+  //   },
+  //   'form.urls'() {
+  //     this.form.urls.map(e => {
+  //       e.value = e.value.trim();
+  //     });
+  //     this.$emit("form-event", this.form);
+  //   },
+  //   'form.supportInput'() {
+  //     this.$emit("form-event", this.form);
+  //   },
+  //   'form.hyperparameters'() {
+  //     this.$emit("form-event", this.form);
+  //   },
+  //   'form.cameraId'() {
+  //     this.$emit("form-event", this.form);
+  //   },
+  // },
   computed: {
     callButtonText: function() {
       if (this.callDisabled) {
@@ -131,7 +146,6 @@ export default {
         supportInput.type = "camera";
         supportInput.value = this.form.cameraId;
       }
-      this.$emit('hyperparameters-event', this.form.hyperparameters);
       this.$emit('support-input-event', supportInput);
     },
     closeCamera() {

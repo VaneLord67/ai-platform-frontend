@@ -1,7 +1,7 @@
 <template>
   <div>
     <div>
-      Select ROI:
+      <el-button type="primary" @click="clickRoiButton">点此进行ROI选择:</el-button>
     </div>
     <canvas ref="canvas"
     @mousedown="startSelection"
@@ -17,7 +17,7 @@ export default {
   props: {
     url: {
       type: String,
-      default: "http://localhost:9000/ai-platform/people_h264.mp4",
+      default: "",
     },
   },
   data() {
@@ -34,12 +34,29 @@ export default {
     }
   },
   methods: {
+    clickRoiButton() {
+      if (this.url == "") {
+        this.$message({
+          type: "warning",
+          message: "未填写视频url!",
+        });
+      }
+      this.getFirstFrame();
+    },
     getFirstFrame() {
       this.$axios.get("/model/track/first_frame", {
         params: {
           url: this.url,
         }
       }).then((res) => {
+        if (res && !res.data) {
+          this.$message({
+              type: 'warning',
+              message: "获取第一帧图像失败",
+            }
+          )
+        }
+
         this.firstFrameJPEGText = res.data;
         this.canvas = this.$refs.canvas;
         this.ctx = this.canvas.getContext('2d');
@@ -87,12 +104,19 @@ export default {
     },
     endSelection() {
       this.isSelecting = false;
-      console.log('Selected ROI:', this.startX, this.startY, this.width, this.height);
+      // console.log('Selected ROI:', this.startX, this.startY, this.width, this.height);
+      let roi = {
+        x: Math.round(this.startX),
+        y: Math.round(this.startY),
+        width: Math.round(this.width),
+        height: Math.round(this.height),
+      }
+      this.$emit('roi-event', roi);
     }
   },
 
   mounted() {
-    this.getFirstFrame();
+    // this.getFirstFrame();
   },
 }
 </script>

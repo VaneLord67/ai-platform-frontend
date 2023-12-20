@@ -39,7 +39,7 @@ export default {
       let get_presigned_url_param = {
         objectName: file.file.name
       }
-      console.log("param: " + get_presigned_url_param.objectName)
+      // console.log("param: " + get_presigned_url_param.objectName)
       this.$axios.get("/object_storage/presigned_url", {
         params: get_presigned_url_param,
       }).then((res) => {

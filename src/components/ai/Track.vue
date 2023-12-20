@@ -12,14 +12,13 @@
     </div>
     <UploadFile></UploadFile>
 
-    <model-call 
+    <arg-form 
     :callDisabled="callDisabled"
     :callLoading="callLoading"
     :services="services"
+    :form="form"
     @support-input-event="modelCall"
-    @hyperparameters-event="handleHyperparameterEvent"
-    @form-event="handleFormEvent"
-    ></model-call>
+    ></arg-form>
 
     <el-image v-show="form.supportInput === '摄像头输入' && cameraData === ''" :src="''" class="output-img">
         <div slot="error" class="image-slot">摄像头输出</div>
@@ -29,7 +28,7 @@
     <video v-show="form.supportInput === '视频输入'" :src="outputUrl" controls width="auto" height="auto">
     </video>
 
-    <select-roi></select-roi>
+    <select-roi :url="roiUrl" @roi-event="handleRoiEvent"></select-roi>
 
   </navigation>
 </template>
@@ -38,46 +37,77 @@
 import Navigation from '../common/Navigation.vue'
 import ServiceManage from '../common/ServiceManage.vue'
 import UploadFile from '../common/UploadFile.vue'
-import ModelCall from '../common/ModelCall.vue'
+import ArgForm from '../common/ArgForm.vue'
 import SelectRoi from '../common/SelectRoi.vue'
 import { io } from "socket.io-client"
 export default {
   name: "Track",
   components: {
-    Navigation, ServiceManage, UploadFile, ModelCall, SelectRoi, 
+    Navigation, ServiceManage, UploadFile, ArgForm, SelectRoi, 
   },
   
   data() {
     return {
       callDisabled: true,
       callLoading: false,
-      hyperparameters: [],
       services: [],
       outputUrl: "",
-      form: {},
+      form: {
+        urls: [],
+        supportInput: "单张图片输入",
+        hyperparameters: [],
+        cameraId: 0,
+      },
       cameraData: "",
+      roi: {},
     };
   },
+  computed: {
+    roiUrl: function() {
+      if (this.form.urls.length == 0) {
+        return "";
+      }
+      return this.form.urls[0].value;
+    },
+  },
   methods: {
+    handleRoiEvent(roi) {
+      this.roi = roi;
+      this.form.hyperparameters.map(e => {
+        if (e.name === 'roi_x') {
+          e.value = roi.x;
+        } else if (e.name === 'roi_y') {
+          e.value = roi.y;
+        } else if (e.name === 'roi_width') {
+          e.value = roi.width;
+        } else if (e.name === 'roi_height') {
+          e.value = roi.height;
+        }
+        return e;
+      });
+    },
     handleCallDisabledEvent(callDisabled) {
       this.callDisabled = callDisabled;
     },
     handleHyperparameterEvent(hyperparameters) {
-      this.hyperparameters = hyperparameters;
+      this.form.hyperparameters = hyperparameters;
     },
     handleServicesEvent(services) {
       this.services = services;
     },
     handleFormEvent(form) {
       this.form = form;
+      // console.log("form =>", form);
     },
     modelCall(supportInput) {
       this.callLoading = true;
       let dto = {
-        hyperparameters: this.hyperparameters,
+        hyperparameters: this.form.hyperparameters,
         supportInput: supportInput,
       };
-      this.$axios.post("/model/track/call", dto).then((res) => {
+      this.$axios.post("/model/track/call", dto, {
+        timeout: 60000,
+      }).then((res) => {
         if (!res || (res && res.code != 1)) {
           this.$message({
             type: "warning",
