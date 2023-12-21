@@ -1,7 +1,7 @@
 <template>
   <div>
     <div>
-      <el-button type="primary" @click="clickRoiButton">点此进行ROI选择:</el-button>
+      <el-button v-show="url != ''" type="primary" @click="clickRoiButton">点此进行ROI选择:</el-button>
     </div>
     <canvas ref="canvas"
     @mousedown="startSelection"
@@ -19,6 +19,28 @@ export default {
       type: String,
       default: "",
     },
+    imgSrc: {
+      type: String,
+      default: "",
+    },
+    roiSent: {
+      type: Boolean,
+      default: false,
+    }
+  },
+  watch: {
+    imgSrc(newVal) {
+      this.image.src = newVal;
+      // this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      // this.ctx.drawImage(this.image, 0, 0);
+      // this.ctx.strokeStyle = 'red';
+      // this.ctx.lineWidth = 2;
+      // this.ctx.strokeRect(this.startX, this.startY, this.width, this.height);
+      if (newVal == '') {
+        // this.ctx.drawImage(this.image, 0, 0);
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      }
+    }
   },
   data() {
     return {
@@ -34,6 +56,20 @@ export default {
     }
   },
   methods: {
+    initCanvas() {
+      this.canvas = this.$refs.canvas;
+      this.ctx = this.canvas.getContext('2d');
+      
+      this.image = new Image();
+      this.image.crossOrigin = 'anonymous';
+      this.image.src = this.imgSrc;
+
+      this.image.onload = () => {
+        this.canvas.width = this.image.width;
+        this.canvas.height = this.image.height;
+        this.drawOnCanvas();
+      };
+    },
     clickRoiButton() {
       if (this.url == "") {
         this.$message({
@@ -74,15 +110,18 @@ export default {
       })
     },
     drawOnCanvas() {
+      // console.log("draw on canvas");
       this.ctx.drawImage(this.image, 0, 0);
-      this.drawSelection();
+      if (!this.roiSent) {
+        this.drawSelection();
+      }
     },
     drawSelection() {
-      if (this.isSelecting) {
+      // if (this.isSelecting) {
         this.ctx.strokeStyle = 'red';
         this.ctx.lineWidth = 2;
         this.ctx.strokeRect(this.startX, this.startY, this.width, this.height);
-      }
+      // }
     },
     startSelection(event) {
       this.isSelecting = true;
@@ -117,6 +156,7 @@ export default {
 
   mounted() {
     // this.getFirstFrame();
+    this.initCanvas();
   },
 }
 </script>

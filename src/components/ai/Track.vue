@@ -18,17 +18,32 @@
     :services="services"
     :form="form"
     @support-input-event="modelCall"
+    @close-camera-event="handleCloseCameraEvent"
     ></arg-form>
 
-    <el-image v-show="form.supportInput === '摄像头输入' && cameraData === ''" :src="''" class="output-img">
+    <el-button v-show="form.supportInput === '摄像头输入'" @click="confirmROI">将ROI发送给服务器</el-button>
+
+    <!-- <el-image v-show="form.supportInput === '摄像头输入' && cameraData === ''" :src="''" class="output-img">
         <div slot="error" class="image-slot">摄像头输出</div>
-    </el-image>
-    <img v-show="form.supportInput === '摄像头输入' && cameraData != ''" :src="cameraData" alt="Image">
+    </el-image> -->
+    <!-- <img v-show="form.supportInput === '摄像头输入' && cameraData != ''" :src="cameraData" alt="Image"> -->
 
     <video v-show="form.supportInput === '视频输入'" :src="outputUrl" controls width="auto" height="auto">
     </video>
 
-    <select-roi :url="roiUrl" @roi-event="handleRoiEvent"></select-roi>
+    <div v-for="(frame, index) in this.frames" :key="index" style="border: 1px solid; padding: 5px; margin-bottom: 10px;">
+      <div style="font-weight: bold; padding-bottom: 30px; padding-top: 10px;">
+        {{ 'frame' + index + ':' }}
+      </div>
+      <el-descriptions :title="''">
+        <el-descriptions-item label="x">{{ frame.x }}</el-descriptions-item>
+        <el-descriptions-item label="y">{{ frame.y }}</el-descriptions-item>
+        <el-descriptions-item label="width">{{ frame.width }}</el-descriptions-item>
+        <el-descriptions-item label="height">{{ frame.height }}</el-descriptions-item>
+      </el-descriptions>
+    </div>
+
+    <select-roi :url="roiUrl" :imgSrc="cameraData" :roiSent="roiSent" @roi-event="handleRoiEvent"></select-roi>
 
   </navigation>
 </template>
@@ -59,11 +74,17 @@ export default {
         cameraId: 0,
       },
       cameraData: "",
-      roi: {},
+      roi: null,
+      frames: [],
+      socket: null,
+      roiSent: false,
     };
   },
   computed: {
     roiUrl: function() {
+      if (this.form.supportInput === '摄像头输入') {
+        return "";
+      }
       if (this.form.urls.length == 0) {
         return "";
       }
@@ -85,6 +106,14 @@ export default {
         }
         return e;
       });
+    },
+    handleCloseCameraEvent() {
+      if (this.socket) {
+        console.log("disconnect ws");
+        this.socket.disconnect();
+        this.socket = null;
+        this.cameraData = "";
+      }
     },
     handleCallDisabledEvent(callDisabled) {
       this.callDisabled = callDisabled;
@@ -117,14 +146,20 @@ export default {
         }
         if (this.form.supportInput == "摄像头输入") {
           let namespace = res.data;
-          console.log("connect to:", this.$axios.defaults.baseURL + namespace)
+          console.log("connect to:", this.$axios.defaults.baseURL + namespace);
           const socket = io(this.$axios.defaults.baseURL + namespace);
           this.socket = socket;
-          console.log("success connect ws")
+          console.log("success connect ws");
           socket.emit('camera_retrieve', "");
           socket.on('camera_data', (msg) => {
-            this.cameraData = "data:image/jpeg;base64," + msg;
-            // console.log("receive msg:" + this.cameraData);
+            if (msg.startsWith('{')) {
+              this.frames = [];
+              let frame = JSON.parse(msg)
+              this.frames.push(frame);
+              // console.log(frame);
+            } else {
+              this.cameraData = "data:image/jpeg;base64," + msg;
+            }
             socket.emit('camera_retrieve', "");
           });
         } else {
@@ -134,7 +169,23 @@ export default {
       }).finally(() => {
         this.callLoading = false;
       });
-    }
+    },
+    confirmROI() {
+      if (this.roi === null) {
+        this.$message({
+          type: 'warning',
+          message: '未选择ROI',
+        });
+      }
+      if (this.socket) {
+        this.socket.emit('roi_event', JSON.stringify(this.roi));
+        this.$message({
+          type: 'success',
+          message: 'ROI已发送给服务器',
+        });
+        this.roiSent = true;
+      }
+    },
   },
 };
 </script>

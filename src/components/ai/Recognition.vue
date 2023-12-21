@@ -132,8 +132,8 @@ export default {
               // console.log('frames:', this.frames);
             } else {
               this.cameraData = "data:image/jpeg;base64," + msg;
+              // console.log("receive msg:" + this.cameraData);
             }
-            // console.log("receive msg:" + this.cameraData);
             socket.emit('camera_retrieve', "");
           });
         } else {

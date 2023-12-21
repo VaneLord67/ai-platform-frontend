@@ -81,30 +81,13 @@ export default {
       
     }
   },
-  // watch: {
-  //   form(newValue) {
-  //     this.$emit("form-event", newValue);
-  //   },
-  //   'form.urls'() {
-  //     this.form.urls.map(e => {
-  //       e.value = e.value.trim();
-  //     });
-  //     this.$emit("form-event", this.form);
-  //   },
-  //   'form.supportInput'() {
-  //     this.$emit("form-event", this.form);
-  //   },
-  //   'form.hyperparameters'() {
-  //     this.$emit("form-event", this.form);
-  //   },
-  //   'form.cameraId'() {
-  //     this.$emit("form-event", this.form);
-  //   },
-  // },
   computed: {
     callButtonText: function() {
       if (this.callDisabled) {
         return "无正在运行实例，不可调用";
+      }
+      if (this.form.supportInput === '摄像头输入') {
+        return "开启摄像头";
       }
       return "调用";
     },
