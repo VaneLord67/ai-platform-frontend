@@ -1,92 +1,27 @@
 <template>
   <navigation>
-    <div style="font-weight: bold; padding-bottom: 20px;">
-      服务信息
-    </div>
-    <el-descriptions v-show="showServiceInfo">
-      <el-descriptions-item label="适用领域">{{ modelField }}</el-descriptions-item>
-      <el-descriptions-item label="模型名">{{ modelName }}</el-descriptions-item>
-    </el-descriptions>
 
-    <el-descriptions>
-      <el-descriptions-item label="正在运行的实例数">{{ runningInstanceCount }}</el-descriptions-item>
-      <el-descriptions-item label="可运行的实例数">{{ readyInstanceCount }}</el-descriptions-item>
-    </el-descriptions>
-
-    <el-button type="success" round size="small" @click="start()">启动一个实例</el-button>
-    <el-button type="danger" round size="small" @click="stop()">停止一个实例</el-button>
-    <el-button type="danger" round size="small" @click="stopAll()">一键停止所有实例</el-button>
+    <service-manage serviceName="detection_service" 
+    @call-disabled-event="handleCallDisabledEvent"
+    @hyperparameter-event="handleHyperparameterEvent"
+    @services-event="handleServicesEvent"
+    ></service-manage>
 
     <div style="font-weight: bold; padding-top: 20px; padding-bottom: 20px;">
       上传
     </div>
     <UploadFile></UploadFile>
 
-    <div style="font-weight: bold; padding-top: 20px; padding-bottom: 20px; margin-top: 40px">
-      测试模拟
-    </div>
+    <arg-form 
+    :callDisabled="callDisabled"
+    :callLoading="callLoading"
+    :services="services"
+    :socket="socket"
+    :form="form"
+    @close-camera-event="handleCloseCameraEvent"
+    @support-input-event="modelCall"
+    ></arg-form>
 
-    <div class="flex-container">
-      <el-form ref="form" :model="form" class="input-form">
-        <!-- <el-form-item label="图片url">
-          <el-input v-model="form.url"></el-input>
-        </el-form-item> -->
-        
-        <div v-show="form.supportInput != '摄像头输入'">
-          url
-          <el-form-item
-            v-for="(url, index) in form.urls"
-            :label="url.name"
-            :key="url.key"
-            :prop="'urls.' + index + '.value'"
-          >
-            <el-input v-model="url.value"></el-input>
-          </el-form-item>
-        </div>
-
-        <el-form-item v-show="form.supportInput === '摄像头输入'"  label="摄像头id">
-          <el-input v-model="form.cameraId"></el-input>
-        </el-form-item>
-
-        <el-form-item
-          v-for="(hyperparameter, index) in form.hyperparameters"
-          :label="hyperparameter.name"
-          :key="hyperparameter.key"
-          :prop="'hyperparameters.' + index + '.value'"
-        >
-          <el-input v-model="hyperparameter.value"></el-input>
-        </el-form-item>
-
-        <el-form-item label="输入形式">
-          <el-radio-group v-model="form.supportInput">
-            <el-radio
-              v-bind:disabled="!singlePictureSupport"
-              label="单张图片输入"
-            ></el-radio>
-            <el-radio
-              v-bind:disabled="!multiplePictureSupport"
-              label="多张图片输入"
-            ></el-radio>
-            <el-radio
-              v-bind:disabled="!videoSupport"
-              label="视频输入"
-            ></el-radio>
-            <el-radio
-              v-bind:disabled="!cameraSupport"
-              label="摄像头输入"
-            ></el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="modelCall" :loading="callLoading" :disabled="callDisabled">{{ callButtonText }}</el-button>
-          <el-button v-show="form.supportInput === '多张图片输入'" @click="addUrl">新增图片url</el-button>
-          <el-button v-show="form.supportInput === '摄像头输入'" @click="closeCamera">关闭摄像头</el-button>
-        </el-form-item>
-      </el-form>
-
-      
-    </div>
-    
     <div v-show="this.outputUrls.length > 0 && form.supportInput != '视频输入'">
       <el-image v-for="(output_url, index) in this.outputUrls" :key="index" :src="output_url" class="output-img">
         <div slot="error" class="image-slot">检测结果</div>
@@ -120,18 +55,19 @@
       </el-descriptions>
     </div>
 
-    
   </navigation>
 </template>
 
 <script>
-import Navigation from "../common/Navigation.vue";
-import UploadFile from "../common/UploadFile.vue";
+import Navigation from '../common/Navigation.vue'
+import ServiceManage from '../common/ServiceManage.vue'
+import UploadFile from '../common/UploadFile.vue'
+import ArgForm from '../common/ArgForm.vue'
 import { io } from "socket.io-client"
 export default {
   name: "Detection",
   components: {
-    Navigation, UploadFile
+    Navigation, UploadFile, ServiceManage, ArgForm
   },
   data() {
     return {
@@ -151,79 +87,32 @@ export default {
       frames: [],
       services: [],
       cameraData: "",
+      socket: null,
     };
   },
   computed: {
-    showServiceInfo: function() {
-      if (this.services.length == 0) {
-        return false;
-      }
-      return true;
-    },
-    callButtonText: function() {
-      if (this.callDisabled) {
-        return "无正在运行实例，不可调用";
-      }
-      return "调用";
-    },
-    runningInstanceCount: function () {
-      let count = 0;
-      for (const service of this.services) {
-        if (service.state == "running") {
-          count++;
-        }
-      }
-      return count;
-    },
-    readyInstanceCount: function () {
-      let count = 0;
-      for (const service of this.services) {
-        if (service.state == "ready") {
-          count++;
-        }
-      }
-      return count;
-    },
-    singlePictureSupport: function () {
-      if (this.services.length == 0) {
-        return false;
-      }
-      if (this.services[0].model.support_input.includes("single_picture_url")) {
-        return true;
-      }
-      return false;
-    },
-    multiplePictureSupport: function () {
-      if (this.services.length == 0) {
-        return false;
-      }
-      if (
-        this.services[0].model.support_input.includes("multiple_picture_url")
-      ) {
-        return true;
-      }
-      return false;
-    },
-    videoSupport: function () {
-      if (this.services.length == 0) {
-        return false;
-      }
-      if (this.services[0].model.support_input.includes("video_url")) {
-        return true;
-      }
-      return false;
-    },
-    cameraSupport: function() {
-      if (this.services.length == 0) {
-        return false;
-      }
-      if (this.services[0].model.support_input.includes("camera")) {
-        return true;
-      }
-      return false;
-    },
   },
   methods: {
+    handleCloseCameraEvent() {
+      if (this.socket) {
+        console.log("disconnect ws");
+        this.socket.disconnect();
+        this.socket = null;
+        this.cameraData = "";
+      }
+    },
+    handleCallDisabledEvent(callDisabled) {
+      this.callDisabled = callDisabled;
+    },
+    handleHyperparameterEvent(hyperparameters) {
+      this.form.hyperparameters = hyperparameters;
+    },
+    handleServicesEvent(services) {
+      this.services = services;
+    },
+    handleFormEvent(form) {
+      this.form = form;
+    },
     modelCall() {
       this.callLoading = true;
       this.outputUrls = [];
@@ -257,14 +146,21 @@ export default {
         }
         if (this.form.supportInput == "摄像头输入") {
           let namespace = res.data;
-          console.log("connect to:", this.$axios.defaults.baseURL + namespace)
+          console.log("connect to:", this.$axios.defaults.baseURL + namespace);
           const socket = io(this.$axios.defaults.baseURL + namespace);
           this.socket = socket;
           console.log("success connect ws")
           socket.emit('camera_retrieve', "");
           socket.on('camera_data', (msg) => {
-            this.cameraData = "data:image/jpeg;base64," + msg;
-            // console.log("receive msg:" + this.cameraData);
+            if (msg.startsWith('[')) {
+              let boxes = JSON.parse(msg);
+              this.frames = [];
+              this.frames.push(boxes);
+              // console.log("frames:", frames);
+            } else {
+              this.cameraData = "data:image/jpeg;base64," + msg;
+              // console.log("receive msg:" + this.cameraData);
+            }
             socket.emit('camera_retrieve', "");
           });
         } else {
@@ -279,103 +175,10 @@ export default {
         this.callLoading = false;
       });
     },
-    getDetectionServiceList() {
-      this.$axios.get("/model/manage/service/detection/list").then((res) => {
-        this.services = res.data;
-        if (this.services.length == 0) {
-          this.callDisabled = true;
-        }
-        if (this.services.length > 0) {
-          this.form.hyperparameters = this.services[0].model.hyperparameters;
-          this.form.hyperparameters.map(e => {
-            e.value = e.default;
-            return e;
-          });
-          this.modelName = this.services[0].model.name;
-          this.modelField = this.services[0].model.field;
-          this.callDisabled = false;
-        }
-      });
-    },
-    stopAll() {
-      this.$axios.post("/model/manage/service/detection/stop_all").then((res) => {
-        if (res && res.code == 1) {
-          this.$message({
-            type: "success",
-            message: "执行成功!",
-          });
-        } else {
-          this.$message({
-            type: "warning",
-            message: "执行失败!",
-          });
-        }
-        setTimeout(() => {
-          this.getDetectionServiceList();
-        }, 5000);
-      });
-    },
-    stop() {
-      this.$axios.post("/model/manage/service/detection/stop").then((res) => {
-        if (res && res.code == 1) {
-          this.$message({
-            type: "success",
-            message: "执行成功!",
-          });
-        } else {
-          this.$message({
-            type: "warning",
-            message: "执行失败!",
-          });
-        }
-        setTimeout(() => {
-          this.getDetectionServiceList();
-        }, 5000);
-      });
-    },
-    start() {
-      this.$axios.post("/model/manage/service/detection/start").then((res) => {
-        if (res && res.code == 1) {
-          this.$message({
-            type: "success",
-            message: "执行成功!",
-          });
-        } else {
-          this.$message({
-            type: "warning",
-            message: "执行失败!",
-          });
-        }
-        setTimeout(() => {
-          this.getDetectionServiceList();
-        }, 5000);
-      })
-    },
-    addUrl() {
-      this.form.urls.push({
-        value: '',
-        key: Date.now(),
-      });
-    },
-    closeCamera() {
-      if (this.socket) {
-        console.log("disconnect ws")
-        this.socket.disconnect();
-        this.socket = null;
-      }
-      this.cameraData = "";
-    },
   },
   mounted() {
-    this.$nextTick(() => {
-      // 等到整个视图都渲染完毕再执行操作
-      this.addUrl();
-      this.getDetectionServiceList();
-    });
   },
-
   beforeDestroy() {
-    this.closeCamera();
   },
 };
 </script>

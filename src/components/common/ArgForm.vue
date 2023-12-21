@@ -147,4 +147,13 @@ export default {
 }
 </script>
 
-<style></style>
+<style>
+.flex-container {
+  display: flex;
+}
+
+.input-form {
+  width: 48%;
+  margin-right: 50px;
+}
+</style>
