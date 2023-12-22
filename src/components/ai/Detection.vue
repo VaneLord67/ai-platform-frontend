@@ -111,6 +111,12 @@ export default {
       this.services = services;
     },
     handleFormEvent(form) {
+      if (form.supportInput != this.form.supportInput) {
+        this.cameraData = "";
+        this.outputUrls = [];
+        this.videoSrc = "";
+        this.frames = [];
+      }
       this.form = form;
     },
     modelCall() {

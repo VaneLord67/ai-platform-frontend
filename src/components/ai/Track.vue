@@ -125,8 +125,12 @@ export default {
       this.services = services;
     },
     handleFormEvent(form) {
+      if (form.supportInput != this.form.supportInput) {
+        this.cameraData = "";
+        this.outputUrl = "";
+        this.frames = [];
+      }
       this.form = form;
-      // console.log("form =>", form);
     },
     modelCall(supportInput) {
       this.callLoading = true;
