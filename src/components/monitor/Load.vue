@@ -5,15 +5,15 @@
       class="load-flex-container">
       <div class="load-container">
         <p class="load-text">CPU负载</p>
-        <el-progress type="dashboard" :percentage="load.cpuPercent"></el-progress>
+        <el-progress type="dashboard" :percentage="load.cpuPercent" :color="colors"></el-progress>
       </div>
       <div class="load-container">
         <p class="load-text">GPU负载</p>
-        <el-progress type="dashboard" :percentage="load.gpuPercent"></el-progress>
+        <el-progress type="dashboard" :percentage="load.gpuPercent" :color="colors"></el-progress>
       </div>
       <div class="load-container">
         <p class="load-text">内存负载</p>
-        <el-progress type="dashboard" :percentage="load.memoryPercent"></el-progress>
+        <el-progress type="dashboard" :percentage="load.memoryPercent" :color="colors"></el-progress>
       </div>
     </div>
   </navigation>
@@ -46,6 +46,13 @@ export default {
         gpuPercent: 0,
         loading: true,
       },
+      colors: [
+        {color: '#2892FF', percentage: 20},
+        {color: '#2892FF', percentage: 40},
+        {color: '#2892FF', percentage: 60},
+        {color: '#FF0F0F', percentage: 70},
+        {color: '#FF0F0F', percentage: 100}
+      ]
     };
   },
 

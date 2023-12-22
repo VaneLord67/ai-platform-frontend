@@ -1,5 +1,6 @@
 <template>
   <el-container>
+    <load-notification></load-notification>
     <el-header>
       <div class="navigation-header">
         <span class="navigation-title"><router-link to="/" tag="span">面向多AI模型部署管理的微服务平台</router-link></span>
@@ -44,9 +45,12 @@
   
 <script>
 import { getToken, removeToken } from "@/utils/storage.js";
+import LoadNotification from "../monitor/LoadNotification.vue";
 export default {
   name: "Navigation",
-
+  components: {
+    LoadNotification,
+  },
   data() {
     return {
       showLogReg: true,

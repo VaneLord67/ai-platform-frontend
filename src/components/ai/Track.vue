@@ -31,6 +31,8 @@
     <video v-show="form.supportInput === '视频输入'" :src="outputUrl" controls width="auto" height="auto">
     </video>
 
+    <select-roi :url="roiUrl" :imgSrc="cameraData" :roiSent="roiSent" @roi-event="handleRoiEvent"></select-roi>
+    
     <div v-for="(frame, index) in this.frames" :key="index" style="border: 1px solid; padding: 5px; margin-bottom: 10px;">
       <div style="font-weight: bold; padding-bottom: 30px; padding-top: 10px;">
         {{ 'frame' + index + ':' }}
@@ -42,8 +44,6 @@
         <el-descriptions-item label="height">{{ frame.height }}</el-descriptions-item>
       </el-descriptions>
     </div>
-
-    <select-roi :url="roiUrl" :imgSrc="cameraData" :roiSent="roiSent" @roi-event="handleRoiEvent"></select-roi>
 
   </navigation>
 </template>
@@ -199,6 +199,8 @@ export default {
       }
       this.outputUrl = "";
       this.frames = [];
+      this.roiUrl = "";
+      this.roiSent = false;
     },
   },
 };
