@@ -91,6 +91,11 @@ export default {
       return this.form.urls[0].value;
     },
   },
+  watch: {
+    'form.supportInput' () {
+      this.clearResource();
+    },
+  },
   methods: {
     handleRoiEvent(roi) {
       this.roi = roi;
@@ -108,12 +113,7 @@ export default {
       });
     },
     handleCloseCameraEvent() {
-      if (this.socket) {
-        console.log("disconnect ws");
-        this.socket.disconnect();
-        this.socket = null;
-        this.cameraData = "";
-      }
+      this.clearResource();
     },
     handleCallDisabledEvent(callDisabled) {
       this.callDisabled = callDisabled;
@@ -189,6 +189,16 @@ export default {
         });
         this.roiSent = true;
       }
+    },
+    clearResource() {
+      if (this.socket) {
+        console.log("disconnect ws");
+        this.socket.disconnect();
+        this.socket = null;
+        this.cameraData = "";
+      }
+      this.outputUrl = "";
+      this.frames = [];
     },
   },
 };

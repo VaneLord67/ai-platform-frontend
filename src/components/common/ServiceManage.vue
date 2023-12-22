@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div v-loading="loading">
     <div style="font-weight: bold; padding-bottom: 20px;">
       服务信息
     </div>
@@ -28,6 +28,7 @@ export default {
       modelName: "",
       modelField: "",
       services: [],
+      loading: true,
     }
   },
   computed: {
@@ -58,6 +59,7 @@ export default {
   },
   methods: {
     getServiceList() {
+      this.loading = true;
       let param = {
         "serviceName": this.serviceName,
       };
@@ -79,6 +81,8 @@ export default {
           this.$emit('hyperparameter-event', this.services[0].model.hyperparameters);
           this.$emit('call-disabled-event', false);
         }
+      }).finally(() => {
+        this.loading = false;
       });
     },
     stopAll() {

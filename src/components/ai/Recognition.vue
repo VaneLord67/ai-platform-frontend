@@ -85,6 +85,11 @@ export default {
       socket: null,
     };
   },
+  watch: {
+    'form.supportInput' () {
+      this.clearResource();
+    },
+  },
   computed: {
   },
   methods: {
@@ -96,16 +101,6 @@ export default {
     },
     handleServicesEvent(services) {
       this.services = services;
-    },
-    handleFormEvent(form) {
-      if (form.supportInput != this.form.supportInput) {
-        this.cameraData = "";
-        this.outputUrls = [];
-        this.outputUrl = "";
-        this.videoSrc = "";
-        this.frames = [];
-      }
-      this.form = form;
     },
     modelCall(supportInput) {
       this.callLoading = true;
@@ -158,13 +153,20 @@ export default {
       });
     },
     handleCloseCameraEvent() {
+      this.clearResource();
+    },
+    clearResource() {
       if (this.socket) {
         console.log("disconnect ws");
         this.socket.disconnect();
         this.socket = null;
         this.cameraData = "";
       }
-    }
+      this.outputUrls = [];
+      this.outputUrl = "";
+      this.videoSrc = "";
+      this.frames = [];
+    },
   },
   beforeDestroy() {
     this.handleCloseCameraEvent();

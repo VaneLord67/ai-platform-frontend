@@ -62,7 +62,7 @@ export default {
             if (res && res.data) {
               // this.fileUrls[file.file.name] = res.data;
               this.$set(this.fileUrls, file.file.name, res.data);
-              console.log(this.fileUrls);
+              // console.log(this.fileUrls);
             }
           });
         });
