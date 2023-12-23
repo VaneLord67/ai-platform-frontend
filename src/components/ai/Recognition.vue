@@ -116,6 +116,13 @@ export default {
             type: "warning",
             message: "调用失败!",
           });
+          if (res && res.message) {
+            this.$notify({
+              title: '调用错误',
+              message: res.message,
+              type: 'warning',
+            });
+          }
           return;
         }
         if (this.form.supportInput == "摄像头输入") {
@@ -125,7 +132,20 @@ export default {
           this.socket = socket;
           console.log("success connect ws")
           socket.emit('camera_retrieve', "");
+          socket.on('camera_log', (msgs) => {
+            for (const msg of msgs) {
+              this.$notify({
+                title: '调用错误',
+                message: msg,
+                type: 'warning',
+              });
+            }
+          });
           socket.on('camera_data', (msg) => {
+            if (msg == '') {
+              socket.emit('camera_retrieve', "");
+              return;
+            }
             if (msg.startsWith('{')) {
               this.frames = [];
               let frame = JSON.parse(msg)
@@ -169,7 +189,7 @@ export default {
     },
   },
   beforeDestroy() {
-    this.handleCloseCameraEvent();
+    this.clearResource();
   },
 };
 </script>

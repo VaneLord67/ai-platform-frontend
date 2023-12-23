@@ -32,7 +32,7 @@
     </video>
 
     <select-roi :url="roiUrl" :imgSrc="cameraData" :roiSent="roiSent" @roi-event="handleRoiEvent"></select-roi>
-    
+
     <div v-for="(frame, index) in this.frames" :key="index" style="border: 1px solid; padding: 5px; margin-bottom: 10px;">
       <div style="font-weight: bold; padding-bottom: 30px; padding-top: 10px;">
         {{ 'frame' + index + ':' }}
@@ -146,6 +146,13 @@ export default {
             type: "warning",
             message: "调用失败!",
           });
+          if (res && res.message) {
+            this.$notify({
+              title: '调用错误',
+              message: res.message,
+              type: 'warning',
+            });
+          }
           return;
         }
         if (this.form.supportInput == "摄像头输入") {
@@ -155,7 +162,20 @@ export default {
           this.socket = socket;
           console.log("success connect ws");
           socket.emit('camera_retrieve', "");
+          socket.on('camera_log', (msgs) => {
+            for (const msg of msgs) {
+              this.$notify({
+                title: '调用错误',
+                message: msg,
+                type: 'warning',
+              });
+            }
+          });
           socket.on('camera_data', (msg) => {
+            if (msg == '') {
+              socket.emit('camera_retrieve', "");
+              return;
+            }
             if (msg.startsWith('{')) {
               this.frames = [];
               let frame = JSON.parse(msg)
@@ -202,6 +222,9 @@ export default {
       this.roiUrl = "";
       this.roiSent = false;
     },
+  },
+  beforeDestroy() {
+    this.clearResource();
   },
 };
 </script>
