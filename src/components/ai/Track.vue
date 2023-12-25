@@ -133,6 +133,13 @@ export default {
       this.form = form;
     },
     modelCall(supportInput) {
+      if (!this.roiSent) {
+        this.$message({
+          type: "warning",
+          message: "未选择ROI,请先进行ROI选择",
+        });
+        return;
+      }
       this.callLoading = true;
       let dto = {
         hyperparameters: this.form.hyperparameters,
