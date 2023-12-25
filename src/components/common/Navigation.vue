@@ -32,7 +32,8 @@
               ><i class="el-icon-monitor"></i>监控</template
             >
             <el-menu-item-group>
-              <el-menu-item index="/monitor/requestLog">请求与响应</el-menu-item>
+              <el-menu-item index="/monitor/requestLog">请求日志</el-menu-item>
+              <el-menu-item index="/monitor/statistics">流量查看</el-menu-item>
               <el-menu-item index="/monitor/load">硬件负载</el-menu-item>
             </el-menu-item-group>
           </el-submenu>

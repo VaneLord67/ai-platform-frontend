@@ -1,5 +1,6 @@
 <template>
   <navigation>
+
     <el-table v-loading="loading" element-loading-text="数据加载中"
       element-loading-spinner="el-icon-loading" :data="tableData" border style="width: 100%">
       <el-table-column label="ID" prop="id"></el-table-column>
