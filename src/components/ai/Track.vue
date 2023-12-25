@@ -219,7 +219,6 @@ export default {
       }
       this.outputUrl = "";
       this.frames = [];
-      this.roiUrl = "";
       this.roiSent = false;
     },
   },
