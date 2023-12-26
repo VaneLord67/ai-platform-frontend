@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="transfer">
     <el-select v-model="select" placeholder="请选择角色" @change="getRolePermissions">
       <el-option
         v-for="item in allRoles"
@@ -10,7 +10,7 @@
       </el-option>
     </el-select>
 
-    <el-transfer style="margin-top: 30px;"
+    <el-transfer style="margin-top: 30px; width: 100%;"
       v-model="transferKeys"
       :props="{
         key: 'description',
@@ -125,6 +125,8 @@ export default {
 }
 </script>
 
-<style>
-
+<style scoped>
+   .transfer >>> .el-transfer-panel {
+     width:350px;
+   }
 </style>
