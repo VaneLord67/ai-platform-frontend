@@ -8,6 +8,7 @@ const Track = () => import('../components/ai/Track.vue')
 const RequestLog = () => import('../components/monitor/RequestLog.vue')
 const Load = () => import('../components/monitor/Load.vue')
 const Statistics = () => import('../components/monitor/Statistics.vue')
+const AuthManage = () => import("../components/user/AuthManage.vue")
 
 //创建并暴露一个路由器
 const router = new VueRouter({
@@ -52,6 +53,11 @@ const router = new VueRouter({
 			name: 'statistics',
 			path: '/monitor/statistics',
 			component: Statistics,
+		},
+		{
+			name: 'authManage',
+			path: '/auth/manage',
+			component: AuthManage,
 		}
 	]
 })

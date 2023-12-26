@@ -16,7 +16,7 @@
               ><i class="el-icon-user"></i>用户</template
             >
             <el-menu-item-group>
-              <el-menu-item index="1-1">权限分配</el-menu-item>
+              <el-menu-item index="/auth/manage">管理</el-menu-item>
             </el-menu-item-group>
           </el-submenu>
           <el-submenu index="2">
