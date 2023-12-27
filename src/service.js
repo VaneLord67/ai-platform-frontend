@@ -30,9 +30,8 @@ Axios.interceptors.response.use(
   (res) => {
     // console.log(res)
     // console.log(res.data.Code)
-    switch (res.data.Code) {
-      case 104:
-      case 105:
+    switch (res.data.code) {
+      case 403:
         Vue.prototype.$message({
           type: "warning",
           message: "请登录",
@@ -40,17 +39,11 @@ Axios.interceptors.response.use(
         router.replace({
           path: '/login',
         })
-        break
-      case 429:
-        Vue.prototype.$message({
-          type: "error",
-          message: "服务器正忙,请稍后再次访问",
-        });
-        break
+        break;
       default:
-        break
+        break;
     }
-    return res.data
+    return res.data;
   },
   (err) => {
     // console.log(err.response)
