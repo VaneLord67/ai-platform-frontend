@@ -21,27 +21,26 @@
     @close-camera-event="handleCloseCameraEvent"
     ></arg-form>
 
-    <el-button v-show="form.supportInput === '摄像头输入'" @click="confirmROI">将ROI发送给服务器</el-button>
-
-    <!-- <el-image v-show="form.supportInput === '摄像头输入' && cameraData === ''" :src="''" class="output-img">
+    <el-image v-show="form.supportInput === '摄像头输入' && cameraData === ''" :src="''" class="output-img">
         <div slot="error" class="image-slot">摄像头输出</div>
-    </el-image> -->
-    <!-- <img v-show="form.supportInput === '摄像头输入' && cameraData != ''" :src="cameraData" alt="Image"> -->
+    </el-image>
+    <img v-show="form.supportInput === '摄像头输入' && cameraData != ''" :src="cameraData" alt="Image">
 
     <video v-show="form.supportInput === '视频输入'" :src="outputUrl" controls width="auto" height="auto">
     </video>
-
-    <select-roi :url="roiUrl" :imgSrc="cameraData" :roiSent="roiSent" @roi-event="handleRoiEvent"></select-roi>
 
     <div v-for="(frame, index) in this.frames" :key="index" style="border: 1px solid; padding: 5px; margin-bottom: 10px;">
       <div style="font-weight: bold; padding-bottom: 30px; padding-top: 10px;">
         {{ 'frame' + index + ':' }}
       </div>
-      <el-descriptions :title="''">
-        <el-descriptions-item label="x">{{ frame.x }}</el-descriptions-item>
-        <el-descriptions-item label="y">{{ frame.y }}</el-descriptions-item>
-        <el-descriptions-item label="width">{{ frame.width }}</el-descriptions-item>
-        <el-descriptions-item label="height">{{ frame.height }}</el-descriptions-item>
+      <el-descriptions :title="'box' + boxIndex + ':'" v-for="(box, boxIndex) in frame" :key="boxIndex">
+        <el-descriptions-item label="left">{{ box.left }}</el-descriptions-item>
+        <el-descriptions-item label="right">{{ box.right }}</el-descriptions-item>
+        <el-descriptions-item label="bottom">{{ box.bottom }}</el-descriptions-item>
+        <el-descriptions-item label="top">{{ box.top }}</el-descriptions-item>
+        <el-descriptions-item label="confidence">{{ box.confidence }}</el-descriptions-item>
+        <el-descriptions-item label="class_name">{{ box.class_name }}</el-descriptions-item>
+        <el-descriptions-item label="track_id">{{ box.track_id }}</el-descriptions-item>
       </el-descriptions>
     </div>
 
@@ -53,12 +52,11 @@ import Navigation from '../common/Navigation.vue'
 import ServiceManage from '../common/ServiceManage.vue'
 import UploadFile from '../common/UploadFile.vue'
 import ArgForm from '../common/ArgForm.vue'
-import SelectRoi from '../common/SelectRoi.vue'
 import { io } from "socket.io-client"
 export default {
   name: "Track",
   components: {
-    Navigation, ServiceManage, UploadFile, ArgForm, SelectRoi, 
+    Navigation, ServiceManage, UploadFile, ArgForm, 
   },
   
   data() {
@@ -74,22 +72,11 @@ export default {
         cameraId: 0,
       },
       cameraData: "",
-      roi: null,
       frames: [],
       socket: null,
-      roiSent: false,
     };
   },
   computed: {
-    roiUrl: function() {
-      if (this.form.supportInput === '摄像头输入') {
-        return "";
-      }
-      if (this.form.urls.length == 0) {
-        return "";
-      }
-      return this.form.urls[0].value;
-    },
   },
   watch: {
     'form.supportInput' () {
@@ -97,21 +84,6 @@ export default {
     },
   },
   methods: {
-    handleRoiEvent(roi) {
-      this.roi = roi;
-      this.form.hyperparameters.map(e => {
-        if (e.name === 'roi_x') {
-          e.value = roi.x;
-        } else if (e.name === 'roi_y') {
-          e.value = roi.y;
-        } else if (e.name === 'roi_width') {
-          e.value = roi.width;
-        } else if (e.name === 'roi_height') {
-          e.value = roi.height;
-        }
-        return e;
-      });
-    },
     handleCloseCameraEvent() {
       this.clearResource();
     },
@@ -133,13 +105,6 @@ export default {
       this.form = form;
     },
     modelCall(supportInput) {
-      if (!this.roiSent) {
-        this.$message({
-          type: "warning",
-          message: "未选择ROI,请先进行ROI选择",
-        });
-        return;
-      }
       this.callLoading = true;
       let dto = {
         hyperparameters: this.form.hyperparameters,
@@ -183,7 +148,7 @@ export default {
               socket.emit('camera_retrieve', "");
               return;
             }
-            if (msg.startsWith('{')) {
+            if (msg.startsWith('[')) {
               this.frames = [];
               let frame = JSON.parse(msg)
               this.frames.push(frame);
@@ -201,22 +166,6 @@ export default {
         this.callLoading = false;
       });
     },
-    confirmROI() {
-      if (this.roi === null) {
-        this.$message({
-          type: 'warning',
-          message: '未选择ROI',
-        });
-      }
-      if (this.socket) {
-        this.socket.emit('roi_event', JSON.stringify(this.roi));
-        this.$message({
-          type: 'success',
-          message: 'ROI已发送给服务器',
-        });
-        this.roiSent = true;
-      }
-    },
     clearResource() {
       if (this.socket) {
         console.log("disconnect ws");
@@ -226,7 +175,6 @@ export default {
       }
       this.outputUrl = "";
       this.frames = [];
-      this.roiSent = false;
     },
   },
   beforeDestroy() {
@@ -236,5 +184,15 @@ export default {
 </script>
 
 <style>
-
+.output-img {
+  height: 400px;
+  width: 400px;
+  border: 1px solid;
+}
+.image-slot {
+  display: flex;
+  align-items: center; /* 垂直居中 */
+  justify-content: center; /* 水平居中 */
+  height: 100%; /* 使容器高度占满 el-image，确保垂直居中生效 */
+}
 </style>
