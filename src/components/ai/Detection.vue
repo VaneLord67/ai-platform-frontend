@@ -251,9 +251,9 @@ export default {
       }
       this.outputUrls = [];
       this.videoSrc = "";
-      this.videoJsonSrc = "",
-      this.videoProgress = 0,
-      this.videoTaskDone = false,
+      this.videoJsonSrc = "";
+      this.videoProgress = 0;
+      this.videoTaskDone = false;
       this.frames = [];
     },
   },
