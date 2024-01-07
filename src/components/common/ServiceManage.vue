@@ -12,6 +12,13 @@
       <el-descriptions-item label="正在运行的实例数">{{ runningInstanceCount }}</el-descriptions-item>
       <el-descriptions-item label="可运行的实例数">{{ readyInstanceCount }}</el-descriptions-item>
     </el-descriptions>
+
+    <div v-for="(service, index) in this.blockedServices" :key="index">
+      <i class="el-icon-warning"></i>
+      机器：{{ service.hostname }} 任务阻塞, 任务类型: {{ service.task_type }}, 任务开始时间: {{ service.task_start_time_string }}
+    </div>
+
+    <br>
   
     <el-button type="success" round size="small" @click="start()">启动一个实例</el-button>
     <el-button type="danger" round size="small" @click="stop()">停止一个实例</el-button>
@@ -28,6 +35,7 @@ export default {
       modelName: "",
       modelField: "",
       services: [],
+      blockedServices: [],
       loading: true,
     }
   },
@@ -65,6 +73,22 @@ export default {
       };
       this.$axios.get("/model/manage/service/list", {params: param}).then((res) => {
         this.services = res.data;
+        this.blockedServices = this.services.filter(service => {
+          let task_start_time = service.task_start_time;
+          let current_time = new Date().getTime();
+          // 计算给定时间戳与当前时间戳的差值（单位：毫秒）
+          let timeDifference = current_time - task_start_time;
+          // 将毫秒转换为小时
+          let hoursDifference = timeDifference / (1000 * 60 * 60); // 1000毫秒 * 60秒 * 60分
+          // 检查差值是否大于阈值
+          return hoursDifference > 1 && service.state != 'ready' && service.task_type != 'camera';
+        }).map(service => {
+          let date = new Date(service.task_start_time);
+          return {
+            ...service,
+            'task_start_time_string': date.toLocaleString(),
+          }
+        });
         this.$emit('services-event', this.services);
         if (this.services.length == 0) {
           this.$emit('call-disabled-event', true);

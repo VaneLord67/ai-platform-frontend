@@ -41,6 +41,16 @@
     <video v-show="form.supportInput === '视频输入'" :src="videoSrc" controls width="auto" height="auto">
     </video>
 
+    <video-progress 
+      ref="videoProgress"
+      :progress="videoProgress" 
+    >
+    </video-progress>
+
+    <div style="margin-top: 10px;" v-show="videoJsonSrc != ''">
+      <a :href="videoJsonSrc" target="_blank">jsonl文件下载地址</a>
+    </div>
+
     <div v-for="(frame, index) in this.frames" :key="index" style="border: 1px solid; padding: 5px; margin-bottom: 10px;">
       <div style="font-weight: bold; padding-bottom: 30px; padding-top: 10px;">
         {{ 'frame' + index + ':' }}
@@ -64,10 +74,12 @@ import ServiceManage from '../common/ServiceManage.vue'
 import UploadFile from '../common/UploadFile.vue'
 import ArgForm from '../common/ArgForm.vue'
 import { io } from "socket.io-client"
+import VideoProgress from '../common/VideoProgress.vue'
 export default {
   name: "Detection",
   components: {
-    Navigation, UploadFile, ServiceManage, ArgForm
+    Navigation, UploadFile, ServiceManage, ArgForm,
+    VideoProgress
   },
   data() {
     return {
@@ -84,6 +96,9 @@ export default {
       },
       outputUrls: [],
       videoSrc: "",
+      videoJsonSrc: "",
+      videoProgress: 0,
+      videoTaskDone: false,
       frames: [],
       services: [],
       cameraData: "",
@@ -111,6 +126,7 @@ export default {
       this.services = services;
     },
     modelCall() {
+      this.clearResource();
       this.callLoading = true;
       this.outputUrls = [];
       this.frames = [];
@@ -179,6 +195,40 @@ export default {
             socket.emit('camera_retrieve', "");
             // console.log("emit camera_retrieve");
           });
+        } else if (this.form.supportInput == "视频输入")  {
+          this.$refs.videoProgress.dialogOpen();
+          this.videoProgressVisible = true;
+          let namespace = res.data;
+          console.log("connect to:", this.$axios.defaults.baseURL + namespace);
+          const socket = io(this.$axios.defaults.baseURL + namespace);
+          this.socket = socket;
+          console.log("success connect ws")
+          socket.on('video_log', (msgs) => {
+            for (const msg of msgs) {
+              this.$notify({
+                title: '调用错误',
+                message: msg,
+                type: 'warning',
+              });
+            }
+          });
+          socket.on('progress_data', (msg) => {
+            this.videoProgress = Math.floor(Number(msg) * 100);
+            if (!this.videoTaskDone) {
+              socket.emit('progress_retrieve', "");
+            }
+          });
+          socket.on('video_task_done', (msgs) => {
+            this.videoTaskDone = true;
+            this.$refs.videoProgress.dialogClose();
+            if (msgs.length != 2) {
+              console.log("video task package length error");
+              return;
+            }
+            this.videoSrc = msgs[0];
+            this.videoJsonSrc = msgs[1];
+          });
+          socket.emit('progress_retrieve', "");
         } else {
           this.outputUrls = res.data.urls;
           if (this.form.supportInput === "视频输入") {
@@ -201,6 +251,9 @@ export default {
       }
       this.outputUrls = [];
       this.videoSrc = "";
+      this.videoJsonSrc = "",
+      this.videoProgress = 0,
+      this.videoTaskDone = false,
       this.frames = [];
     },
   },
