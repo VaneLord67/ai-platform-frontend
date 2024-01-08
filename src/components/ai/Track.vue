@@ -98,6 +98,11 @@ export default {
   watch: {
     'form.supportInput' () {
       this.clearResource();
+      this.form.urls = [];
+      this.form.urls.push({
+        value: '',
+        key: Date.now(),
+      });
     },
   },
   methods: {
