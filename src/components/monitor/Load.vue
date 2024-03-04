@@ -58,10 +58,10 @@ export default {
 
   methods: {
     computeLoadProgressStatus(loadValue) {
-      if (loadValue < 0.7) {
+      if (loadValue < 70) {
         return "success";
       }
-      if (loadValue < 0.95) {
+      if (loadValue < 95) {
         return "warning";
       }
       return "exception";

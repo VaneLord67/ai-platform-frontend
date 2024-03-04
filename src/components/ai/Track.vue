@@ -44,13 +44,7 @@
         {{ 'frame' + index + ':' }}
       </div>
       <el-descriptions :title="'box' + boxIndex + ':'" v-for="(box, boxIndex) in frame" :key="boxIndex">
-        <el-descriptions-item label="left">{{ box.left }}</el-descriptions-item>
-        <el-descriptions-item label="right">{{ box.right }}</el-descriptions-item>
-        <el-descriptions-item label="bottom">{{ box.bottom }}</el-descriptions-item>
-        <el-descriptions-item label="top">{{ box.top }}</el-descriptions-item>
-        <el-descriptions-item label="confidence">{{ box.confidence }}</el-descriptions-item>
-        <el-descriptions-item label="class_name">{{ box.class_name }}</el-descriptions-item>
-        <el-descriptions-item label="track_id">{{ box.track_id }}</el-descriptions-item>
+        <el-descriptions-item :label="boxKey" v-for="(boxValue, boxKey, boxKeyIndex) in box" :key="boxKeyIndex">{{ boxValue }}</el-descriptions-item>
       </el-descriptions>
     </div>
 

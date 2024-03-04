@@ -3,7 +3,7 @@ import { getToken } from "@/utils/storage.js";
 import router from '@/router/index.js';
 import Vue from 'vue';
 
-export const baseURL = "http://localhost:8086";
+export const baseURL = "http://192.168.1.208:8086";
 
 export const Axios = axios.create({
   baseURL: baseURL,
