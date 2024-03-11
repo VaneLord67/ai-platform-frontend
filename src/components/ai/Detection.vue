@@ -23,16 +23,18 @@
       </el-image>
     </div>
 
-    <el-image v-show="form.supportInput === '摄像头输入' && cameraData === ''" :src="''" class="output-img">
+    <!-- <el-image v-show="form.supportInput === '摄像头输入' && cameraData === ''" :src="''" class="output-img">
       <div slot="error" class="image-slot">摄像头输出</div>
-    </el-image>
+    </el-image> -->
     <img v-show="form.supportInput === '摄像头输入' && cameraData != ''" :src="cameraData" alt="Image">
     <div class="camera-video-container">
       <video ref="cameraVideo" id="camera-video" v-show="form.supportInput === '摄像头输入'" class="camera-video" autoplay controls
         disablePictureInPicture controlsList="nodownload nofullscreen" muted>
       </video>
-      <div v-for="(rect, index) in frames" :key="index" class="camera-overlay" :style="{ left: rect.xmin + 'px', top: rect.ymin + 'px', width: rect.w + 'px', height: rect.h + 'px' }">
-        <span class="camera-overlay-text">cls{{ rect.label }} conf{{ rect.score }}</span>
+      <div v-if="frames.length > 0">
+        <div v-for="(rect, index) in frames[0]" :key="index" class="camera-overlay" :style="{ left: rect.xmin + 'px', top: rect.ymin + 'px', width: rect.w + 'px', height: rect.h + 'px' }">
+          <span class="camera-overlay-text">cls{{ rect.label }} conf{{ rect.score }}</span>
+        </div>
       </div>
     </div>
 
@@ -176,7 +178,7 @@ export default {
             this.cameraVideoPlayed = false;
           });
 
-          this.webRtcServer = new WebRtcStreamer('video', webrtcURL);
+          this.webRtcServer = new WebRtcStreamer('camera-video', webrtcURL);
           this.webRtcServer.connect(this.form.cameraId);
 
           let namespace = res.data;
@@ -271,6 +273,7 @@ export default {
         console.log("disconnect webRtc");
         this.webRtcServer.disconnect();
         this.webRtcServer = null;
+        this.$refs.cameraVideo.src = "";
       }
       this.outputUrls = [];
       this.videoSrc = "";
@@ -318,8 +321,6 @@ export default {
 
 .camera-video-container {
   position: relative;
-  width: 640px; /* 设置容器宽度 */
-  height: 480px; /* 设置容器高度 */
 }
 
 .camera-overlay {
