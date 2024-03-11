@@ -1,26 +1,16 @@
 <template>
   <navigation>
 
-    <service-manage serviceName="detection_service" 
-    @call-disabled-event="handleCallDisabledEvent"
-    @hyperparameter-event="handleHyperparameterEvent"
-    @services-event="handleServicesEvent"
-    ></service-manage>
+    <service-manage serviceName="detection_service" @call-disabled-event="handleCallDisabledEvent"
+      @hyperparameter-event="handleHyperparameterEvent" @services-event="handleServicesEvent"></service-manage>
 
     <div style="font-weight: bold; padding-top: 20px; padding-bottom: 20px;">
       上传
     </div>
     <UploadFile></UploadFile>
 
-    <arg-form 
-    :callDisabled="callDisabled"
-    :callLoading="callLoading"
-    :services="services"
-    :socket="socket"
-    :form="form"
-    @close-camera-event="handleCloseCameraEvent"
-    @support-input-event="modelCall"
-    ></arg-form>
+    <arg-form :callDisabled="callDisabled" :callLoading="callLoading" :services="services" :socket="socket" :form="form"
+      @close-camera-event="handleCloseCameraEvent" @support-input-event="modelCall"></arg-form>
 
     <div v-show="this.outputUrls.length > 0 && form.supportInput != '视频输入'">
       <el-image v-for="(output_url, index) in this.outputUrls" :key="index" :src="output_url" class="output-img">
@@ -34,29 +24,36 @@
     </div>
 
     <el-image v-show="form.supportInput === '摄像头输入' && cameraData === ''" :src="''" class="output-img">
-        <div slot="error" class="image-slot">摄像头输出</div>
+      <div slot="error" class="image-slot">摄像头输出</div>
     </el-image>
     <img v-show="form.supportInput === '摄像头输入' && cameraData != ''" :src="cameraData" alt="Image">
+    <div class="camera-video-container">
+      <video ref="cameraVideo" id="camera-video" v-show="form.supportInput === '摄像头输入'" class="camera-video" autoplay controls
+        disablePictureInPicture controlsList="nodownload nofullscreen" muted>
+      </video>
+      <div v-for="(rect, index) in frames" :key="index" class="camera-overlay" :style="{ left: rect.xmin + 'px', top: rect.ymin + 'px', width: rect.w + 'px', height: rect.h + 'px' }">
+        <span class="camera-overlay-text">cls{{ rect.label }} conf{{ rect.score }}</span>
+      </div>
+    </div>
 
     <video v-show="form.supportInput === '视频输入'" :src="videoSrc" controls width="auto" height="auto">
     </video>
 
-    <video-progress 
-      ref="videoProgress"
-      :progress="videoProgress" 
-    >
+    <video-progress ref="videoProgress" :progress="videoProgress">
     </video-progress>
 
     <div style="margin-top: 10px;" v-show="videoJsonSrc != ''">
       <a :href="videoJsonSrc" target="_blank">jsonl文件下载地址</a>
     </div>
 
-    <div v-for="(frame, index) in this.frames" :key="index" style="border: 1px solid; padding: 5px; margin-bottom: 10px;">
+    <div v-for="(frame, index) in this.frames" :key="index"
+      style="border: 1px solid; padding: 5px; margin-bottom: 10px;">
       <div style="font-weight: bold; padding-bottom: 30px; padding-top: 10px;">
         {{ 'frame' + index + ':' }}
       </div>
       <el-descriptions :title="'box' + boxIndex + ':'" v-for="(box, boxIndex) in frame" :key="boxIndex">
-        <el-descriptions-item :label="boxKey" v-for="(boxValue, boxKey, boxKeyIndex) in box" :key="boxKeyIndex">{{ boxValue }}</el-descriptions-item>
+        <el-descriptions-item :label="boxKey" v-for="(boxValue, boxKey, boxKeyIndex) in box" :key="boxKeyIndex">{{
+          boxValue }}</el-descriptions-item>
       </el-descriptions>
     </div>
 
@@ -64,6 +61,8 @@
 </template>
 
 <script>
+import WebRtcStreamer from '../../../public/webrtcstreamer'
+import { webrtcURL } from '@/service.js'
 import Navigation from '../common/Navigation.vue'
 import ServiceManage from '../common/ServiceManage.vue'
 import UploadFile from '../common/UploadFile.vue'
@@ -98,6 +97,8 @@ export default {
       services: [],
       cameraData: "",
       socket: null,
+      webRtcServer: null,
+      cameraVideoPlayed: false,
     };
   },
   watch: {
@@ -166,6 +167,18 @@ export default {
           return;
         }
         if (this.form.supportInput == "摄像头输入") {
+          const videoElement = this.$refs.cameraVideo;
+          videoElement.addEventListener('play', () => {
+            this.cameraVideoPlayed = true;
+            this.callLoading = false;
+          });
+          videoElement.addEventListener('pause', () => {
+            this.cameraVideoPlayed = false;
+          });
+
+          this.webRtcServer = new WebRtcStreamer('video', webrtcURL);
+          this.webRtcServer.connect(this.form.cameraId);
+
           let namespace = res.data;
           console.log("connect to:", this.$axios.defaults.baseURL + namespace);
           const socket = io(this.$axios.defaults.baseURL + namespace);
@@ -185,8 +198,10 @@ export default {
             if (msg != '') {
               if (msg.startsWith('[')) {
                 let boxes = JSON.parse(msg);
-                this.frames = [];
-                this.frames.push(boxes);
+                if (this.cameraVideoPlayed) {
+                  this.frames = [];
+                  this.frames.push(boxes);
+                }
                 // console.log("frames:", frames);
               } else {
                   this.cameraData = "data:image/jpeg;base64," + msg;
@@ -239,7 +254,9 @@ export default {
           // console.log(this.outputUrls);
         }
       }).finally(() => {
-        this.callLoading = false;
+        if (this.form.supportInput != '摄像头输入') {
+          this.callLoading = false;
+        }
       });
     },
     clearResource() {
@@ -249,6 +266,11 @@ export default {
         this.socket.disconnect();
         this.socket = null;
         this.cameraData = "";
+      }
+      if (this.webRtcServer) {
+        console.log("disconnect webRtc");
+        this.webRtcServer.disconnect();
+        this.webRtcServer = null;
       }
       this.outputUrls = [];
       this.videoSrc = "";
@@ -292,5 +314,24 @@ export default {
 .box-css::v-deep.el-collapse-item__header {
   font-size: 20px;
   font-weight: 700;
+}
+
+.camera-video-container {
+  position: relative;
+  width: 640px; /* 设置容器宽度 */
+  height: 480px; /* 设置容器高度 */
+}
+
+.camera-overlay {
+  position: absolute;
+  border: 2px solid red;
+  box-sizing: border-box;
+}
+
+.camera-overlay-text {
+  position: absolute;
+  top: -20px;
+  left: 0px;
+  color: green;
 }
 </style>
