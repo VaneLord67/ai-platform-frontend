@@ -23,6 +23,15 @@
         <div>
           <el-statistic
             :precision="2"
+            :value="maxResponseTime"
+            title="最大响应时间（秒）"
+          ></el-statistic>
+        </div>
+      </el-col>
+      <el-col :span="6">
+        <div>
+          <el-statistic
+            :precision="2"
             :value="errorRate"
             title="错误率（%）"
           ></el-statistic>
@@ -37,6 +46,10 @@ export default {
   name: "StatisticDatum",
   props: {
     averageResponseTime: {
+      type: Number,
+      default: 0,
+    },
+    maxResponseTime: {
       type: Number,
       default: 0,
     },

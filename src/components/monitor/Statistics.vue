@@ -2,44 +2,15 @@
   <navigation>
     <div v-loading="loading">
       <el-tabs type="border-card">
-        <el-tab-pane label="分类服务">
+        <el-tab-pane v-for="(statisticData, serviceName) in statisticsMap" :label="serviceName" :key="serviceName">
           <statistic-datum
-          :averageResponseTime="statisticsMap.recognition.day.averageResponseTime"
-          :errorRate="statisticsMap.recognition.day.errorRate"
-          :totalCalls="statisticsMap.recognition.day.totalCalls"
-          title="每天流量监控"></statistic-datum>
-          <statistic-datum
-          :averageResponseTime="statisticsMap.recognition.hour.averageResponseTime"
-          :errorRate="statisticsMap.recognition.hour.errorRate"
-          :totalCalls="statisticsMap.recognition.hour.totalCalls"
-          title="每小时流量监控"></statistic-datum>
-        </el-tab-pane>
-        <el-tab-pane label="检测服务">
-          <statistic-datum
-            :averageResponseTime="statisticsMap.detection.day.averageResponseTime"
-            :errorRate="statisticsMap.detection.day.errorRate"
-            :totalCalls="statisticsMap.detection.day.totalCalls"
-            title="每天流量监控"
-          ></statistic-datum>
-          <statistic-datum
-            :averageResponseTime="statisticsMap.detection.hour.averageResponseTime"
-            :errorRate="statisticsMap.detection.hour.errorRate"
-            :totalCalls="statisticsMap.detection.hour.totalCalls"
-            title="每小时流量监控"
-          ></statistic-datum>
-        </el-tab-pane>
-        <el-tab-pane label="跟踪服务">
-          <statistic-datum
-            :averageResponseTime="statisticsMap.track.day.averageResponseTime"
-            :errorRate="statisticsMap.track.day.errorRate"
-            :totalCalls="statisticsMap.track.day.totalCalls"
-            title="每天流量监控"
-          ></statistic-datum>
-          <statistic-datum
-            :averageResponseTime="statisticsMap.track.hour.averageResponseTime"
-            :errorRate="statisticsMap.track.hour.errorRate"
-            :totalCalls="statisticsMap.track.hour.totalCalls"
-            title="每小时流量监控"
+            v-for="(data, timePeriod) in statisticData"
+            :key="timePeriod"
+            :averageResponseTime="data.averageResponseTime"
+            :maxResponseTime="data.maxResponseTime"
+            :errorRate="data.errorRate"
+            :totalCalls="data.totalCalls"
+            :title="getTitle(timePeriod)"
           ></statistic-datum>
         </el-tab-pane>
       </el-tabs>
@@ -63,11 +34,13 @@ export default {
         recognition: {
           day: {
             averageResponseTime: 0,
+            maxResponseTime: 0,
             errorRate: 0,
             totalCalls: 0,
           },
           hour: {
             averageResponseTime: 0,
+            maxResponseTime: 0,
             errorRate: 0,
             totalCalls: 0,
           },
@@ -75,11 +48,13 @@ export default {
         detection: {
           day: {
             averageResponseTime: 0,
+            maxResponseTime: 0,
             errorRate: 0,
             totalCalls: 0,
           },
           hour: {
             averageResponseTime: 0,
+            maxResponseTime: 0,
             errorRate: 0,
             totalCalls: 0,
           },
@@ -87,11 +62,13 @@ export default {
         track: {
           day: {
             averageResponseTime: 0,
+            maxResponseTime: 0,
             errorRate: 0,
             totalCalls: 0,
           },
           hour: {
             averageResponseTime: 0,
+            maxResponseTime: 0,
             errorRate: 0,
             totalCalls: 0,
           },
@@ -100,9 +77,18 @@ export default {
     }
   },
   methods: {
+    getTitle(timePeriod) {
+      if (timePeriod === 'day') {
+        return "每天流量监控";
+      } else if (timePeriod === 'hour') {
+        return "每小时流量监控";
+      }
+      return "";
+    },
     convert(e) {
       return {
         averageResponseTime: e.average_response_time,
+        maxResponseTime: e.max_response_time,
         errorRate: e.errorRate,
         path: e.path,
         totalCalls: e.total_calls,
