@@ -1,7 +1,7 @@
 <template>
   <navigation>
     <div v-loading="loading">
-      <el-tabs type="border-card">
+      <el-tabs type="border-card" @tab-click="handleTabClick">
         <el-tab-pane v-for="(statisticData, serviceName) in statisticsMap" :label="serviceName" :key="serviceName">
           <statistic-datum
             v-for="(data, timePeriod) in statisticData"
@@ -12,6 +12,25 @@
             :totalCalls="data.totalCalls"
             :title="getTitle(timePeriod)"
           ></statistic-datum>
+          <h3>时间-流量 折线图</h3>
+          <el-date-picker
+            v-model="search.startTime"
+            type="datetime"
+            placeholder="开始日期时间">
+          </el-date-picker>
+          <el-date-picker
+            v-model="search.endTime"
+            type="datetime" style="margin-left: 10px;"
+            placeholder="结束日期时间">
+          </el-date-picker>
+          <el-button :loading="searchButtonLoading" 
+            @click="getChartData" type="primary" style="margin-left: 10px;">
+            查询
+          </el-button>
+          <div id="chart" 
+            :serviceName="serviceName" 
+            style="width: 100%; height: 400px;">
+          </div>
         </el-tab-pane>
       </el-tabs>
     </div>
@@ -21,6 +40,7 @@
 <script>
 import Navigation from '../common/Navigation.vue';
 import StatisticDatum from '../monitor/StatisticDatum.vue';
+import * as echarts from 'echarts';
 export default {
   components: { 
     StatisticDatum,
@@ -29,6 +49,13 @@ export default {
   name: "Statistics",
   data() {
     return {
+      searchButtonLoading: false,
+      chart: null,
+      chartData: [],
+      search: {
+        startTime: "",
+        endTime: "",
+      },
       loading: true,
       statisticsMap: {
         recognition: {
@@ -77,6 +104,41 @@ export default {
     }
   },
   methods: {
+    getChartData() {
+      let param = {}
+      if (this.search.startTime) {
+        param.startTime = this.search.startTime.getTime();
+      }
+      if (this.search.endTime) {
+        param.endTime = this.search.endTime.getTime();
+      }
+      this.$axios.get('/monitor/chart', {
+        params: param
+      }).then((res) => {
+        if (!res || (res && res.code != 1)) {
+          this.$message({
+            type: "warning",
+            message: "获取图表数据失败",
+          });
+          return;
+        }
+        this.chartData = res.data;
+        if (this.chartData.length == 0) {
+          this.$message({
+            type: "warning",
+            message: "在此时间段无数据",
+          });
+          this.chart.clear();
+          return;
+        }
+        const initServiceName = document.getElementById('chart').getAttribute('serviceName');
+        this.updateChartWithServiceName(initServiceName);
+      });
+    },
+    handleTabClick(tabElement) {
+      const serviceName = tabElement.label;
+      this.updateChartWithServiceName(serviceName);
+    },
     getTitle(timePeriod) {
       if (timePeriod === 'day') {
         return "每天流量监控";
@@ -128,12 +190,57 @@ export default {
             this.statisticsMap.recognition.hour = this.convert(e);
           }
         });
-
-        // console.log(this.statisticsMap);
-
+        this.initChart();
       }).finally(() => {
         this.loading = false;
       });
+    },
+    updateChartWithServiceName(serviceName) {
+      let xAxisData = [];
+      let seriesData = [];
+      this.chartData.forEach(e => {
+        if (e.service_name === serviceName) {
+          xAxisData.push(e.hour_interval);
+          seriesData.push(e.record_count);
+        }
+      });
+      const option = {
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: {
+            type: 'shadow'
+          },
+          backgroundColor: '#fff', // 悬浮框背景色
+          borderColor: '#000', // 悬浮框边框颜色
+          borderWidth: 1, // 悬浮框边框宽度
+          textStyle: { // 悬浮框文字样式
+            color: '#000',
+            fontSize: 12
+          }
+        },
+        xAxis: {
+          type: 'category',
+          data: xAxisData,
+          name: '时间',
+        },
+        yAxis: {
+          type: 'value',
+          name: '请求量/次',
+        },
+        series: [
+          {
+            data: seriesData,
+            type: 'line',
+            smooth: true
+          }
+        ]
+      };
+      this.chart.setOption(option);
+    },
+    initChart() {
+      this.getChartData();
+      const chart = echarts.init(document.getElementById('chart'));
+      this.chart = chart;
     },
   },
   mounted() {
