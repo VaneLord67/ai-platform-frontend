@@ -238,9 +238,8 @@ export default {
       this.chart.setOption(option);
     },
     initChart() {
+      this.chart = echarts.init(document.getElementById('chart'));
       this.getChartData();
-      const chart = echarts.init(document.getElementById('chart'));
-      this.chart = chart;
     },
   },
   mounted() {
