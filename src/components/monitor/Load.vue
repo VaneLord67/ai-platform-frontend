@@ -54,13 +54,7 @@ export default {
         loading: true,
       },
       loadData: null,
-      colors: [
-        {color: '#2892FF', percentage: 20},
-        {color: '#2892FF', percentage: 40},
-        {color: '#2892FF', percentage: 60},
-        {color: '#FF0F0F', percentage: 70},
-        {color: '#FF0F0F', percentage: 100}
-      ]
+      timer: null,
     };
   },
 
@@ -92,6 +86,9 @@ export default {
       }).finally(() => {
         this.load.loading = false;
       });
+      setTimeout(() => {
+        this.getLoadData();
+      }, 5000);
     },
     initChart() {
       this.cpuChart = echarts.init(document.getElementById('cpu-chart'));
@@ -182,9 +179,6 @@ export default {
 
   mounted() {
     this.initChart();
-    setInterval(() => {
-      this.getLoadData();
-    }, 5000);
   },
 }
 </script>

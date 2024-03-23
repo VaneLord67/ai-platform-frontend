@@ -12,27 +12,26 @@
             :totalCalls="data.totalCalls"
             :title="getTitle(timePeriod)"
           ></statistic-datum>
-          <h3>时间-流量 折线图</h3>
-          <el-date-picker
-            v-model="search.startTime"
-            type="datetime"
-            placeholder="开始日期时间">
-          </el-date-picker>
-          <el-date-picker
-            v-model="search.endTime"
-            type="datetime" style="margin-left: 10px;"
-            placeholder="结束日期时间">
-          </el-date-picker>
-          <el-button :loading="searchButtonLoading" 
-            @click="getChartData" type="primary" style="margin-left: 10px;">
-            查询
-          </el-button>
-          <div id="chart" 
-            :serviceName="serviceName" 
-            style="width: 100%; height: 400px;">
-          </div>
         </el-tab-pane>
       </el-tabs>
+    </div>
+    <h3>时间-流量 折线图</h3>
+    <el-date-picker
+      v-model="search.startTime"
+      type="datetime"
+      placeholder="开始日期时间">
+    </el-date-picker>
+    <el-date-picker
+      v-model="search.endTime"
+      type="datetime" style="margin-left: 10px;"
+      placeholder="结束日期时间">
+    </el-date-picker>
+    <el-button :loading="searchButtonLoading" 
+      @click="getChartData" type="primary" style="margin-left: 10px;">
+      查询
+    </el-button>
+    <div id="chart"
+      style="width: 100%; height: 400px;">
     </div>
   </navigation>
 </template>
@@ -57,6 +56,7 @@ export default {
         endTime: "",
       },
       loading: true,
+      selectServiceName: "",
       statisticsMap: {
         recognition: {
           day: {
@@ -131,13 +131,15 @@ export default {
           this.chart.clear();
           return;
         }
-        const initServiceName = document.getElementById('chart').getAttribute('serviceName');
-        this.updateChartWithServiceName(initServiceName);
+        const initServiceName = Object.keys(this.statisticsMap)[0];
+        this.selectServiceName = this.selectServiceName || initServiceName;
+        this.updateChartWithServiceName(this.selectServiceName);
       });
     },
     handleTabClick(tabElement) {
       const serviceName = tabElement.label;
-      this.updateChartWithServiceName(serviceName);
+      this.selectServiceName = serviceName;
+      this.updateChartWithServiceName(this.selectServiceName);
     },
     getTitle(timePeriod) {
       if (timePeriod === 'day') {
@@ -235,7 +237,7 @@ export default {
           }
         ]
       };
-      this.chart.setOption(option);
+      this.chart.setOption(option, true);
     },
     initChart() {
       this.chart = echarts.init(document.getElementById('chart'));
