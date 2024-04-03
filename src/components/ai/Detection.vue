@@ -35,7 +35,7 @@
     </el-select>
 
     <div class="camera-video-container" v-show="form.supportInput === InputMode.CAMERA && cameraMode === CameraMode.WEBRTC_STREAMER">
-      <video ref="webrtcStreamerVideo" id="webrtc-streamer-video" v-show="!videoLagMode && form.supportInput === InputMode.CAMERA" autoplay controls
+      <video ref="webrtcStreamerVideo" id="webrtc-streamer-video" v-show="form.supportInput === InputMode.CAMERA" autoplay controls
         disablePictureInPicture controlsList="nodownload nofullscreen" muted>
       </video>
       <div v-if="frames.length > 0">
@@ -575,7 +575,6 @@ export default {
         this.webRtcServer.disconnect();
         this.webRtcServer = null;
         this.$refs.webrtcStreamerVideo.src = "";
-        this.firstPlay = true;
       }
       if (this.mpegtsPlayer) {
         this.mpegtsPlayer.pause();

@@ -33,10 +33,12 @@
       </el-image>
     </div>
 
-    <el-image v-show="form.supportInput === '摄像头输入' && cameraData === ''" :src="''" class="output-img">
-        <div slot="error" class="image-slot">摄像头输出</div>
-    </el-image>
-    <img v-show="form.supportInput === '摄像头输入' && cameraData != ''" :src="cameraData" alt="Image">
+
+    <div v-show="form.supportInput === InputMode.CAMERA">
+      <video ref="webrtcStreamerVideo" id="webrtc-streamer-video" v-show="form.supportInput === InputMode.CAMERA" autoplay controls
+        disablePictureInPicture controlsList="nodownload nofullscreen" muted>
+      </video>
+    </div>
 
     <video v-show="form.supportInput === '视频输入'" :src="outputUrl" controls width="auto" height="auto">
     </video>
@@ -51,13 +53,14 @@
       <a :href="videoJsonSrc" target="_blank">jsonl文件下载地址</a>
     </div>
 
-    <div v-for="(frame, index) in this.frames" :key="index" style="border: 1px solid; padding: 5px; margin-bottom: 10px;">
+    <div v-for="(frame, index) in this.frames" :key="index"
+      style="border: 1px solid; padding: 5px; margin-bottom: 10px;">
       <div style="font-weight: bold; padding-bottom: 30px; padding-top: 10px;">
         {{ 'frame' + index + ':' }}
       </div>
-      <el-descriptions :title="''">
-        <el-descriptions-item label="类别">{{ frame.class_name }}</el-descriptions-item>
-        <el-descriptions-item label="置信度">{{ frame.confidence }}</el-descriptions-item>
+      <el-descriptions :title="'box' + boxIndex + ':'" v-for="(box, boxIndex) in frame" :key="boxIndex">
+        <el-descriptions-item :label="boxKey" v-for="(boxValue, boxKey, boxKeyIndex) in box" :key="boxKeyIndex">{{
+          boxValue }}</el-descriptions-item>
       </el-descriptions>
     </div>
 
@@ -66,12 +69,16 @@
 </template>
 
 <script>
+import WebRtcStreamer from '../../../public/webrtcstreamer'
+import { webrtcURL } from '@/service.js'
 import Navigation from '../common/Navigation.vue'
 import ServiceManage from '../common/ServiceManage.vue'
 import UploadFile from '../common/UploadFile.vue'
 import ArgForm from '../common/ArgForm.vue'
 import { io } from "socket.io-client"
 import VideoProgress from '../common/VideoProgress.vue'
+import { CameraMode } from '@/enums/camera_mode.js'
+import { InputMode } from '@/enums/input_mode.js'
 export default {
   name: "Recognition",
   components: {
@@ -81,9 +88,13 @@ export default {
   
   data() {
     return {
+      InputMode: InputMode,
+      CameraMode: CameraMode,
+
       frames: [],
       callDisabled: true,
       callLoading: false,
+      cameraVideoPlayed: false,
       services: [],
       outputUrls: "",
       outputUrl: "",
@@ -100,6 +111,8 @@ export default {
 
       cameraData: "",
       socket: null,
+
+      webRtcServer: null,
     };
   },
   watch: {
@@ -150,12 +163,24 @@ export default {
         }
         if (this.form.supportInput == "摄像头输入") {
           let namespace = res.data;
+          
+          const videoElement = this.$refs.webrtcStreamerVideo;
+          videoElement.addEventListener('play', () => {
+            this.cameraVideoPlayed = true;
+            this.callLoading = false;
+          });
+          videoElement.addEventListener('pause', () => {
+            this.cameraVideoPlayed = false;
+          });
+
+          this.webRtcServer = new WebRtcStreamer('webrtc-streamer-video', webrtcURL);
+          this.webRtcServer.connect(this.form.cameraId);
+
           console.log("connect to:", this.$axios.defaults.baseURL + namespace)
           const socket = io(this.$axios.defaults.baseURL + namespace);
           this.socket = socket;
           console.log("success connect ws")
-          socket.emit('camera_retrieve', "");
-          socket.on('camera_log', (msgs) => {
+          socket.on('log', (msgs) => {
             for (const msg of msgs) {
               this.$notify({
                 title: '调用错误',
@@ -165,21 +190,12 @@ export default {
             }
           });
           socket.on('camera_data', (msg) => {
-            if (msg == '') {
-              socket.emit('camera_retrieve', "");
-              return;
-            }
-            if (msg.startsWith('{')) {
+            if (msg && this.cameraVideoPlayed) {
+              const msgJsonObj = JSON.parse(msg);
+              const jsonData = msgJsonObj.data;
               this.frames = [];
-              let frame = JSON.parse(msg)
-              this.frames.push(frame);
-              // console.log(msg.class_name, msg.confidence);
-              // console.log('frames:', this.frames);
-            } else {
-              this.cameraData = "data:image/jpeg;base64," + msg;
-              // console.log("receive msg:" + this.cameraData);
+              this.frames.push(jsonData);
             }
-            socket.emit('camera_retrieve', "");
           });
         } else if (this.form.supportInput == "视频输入") {
           this.$refs.videoProgress.dialogOpen();
@@ -238,6 +254,12 @@ export default {
         this.socket.disconnect();
         this.socket = null;
         this.cameraData = "";
+      }
+      if (this.webRtcServer) {
+        console.log("disconnect webRtc");
+        this.webRtcServer.disconnect();
+        this.webRtcServer = null;
+        this.$refs.webrtcStreamerVideo.src = "";
       }
       this.outputUrls = [];
       this.outputUrl = "";
