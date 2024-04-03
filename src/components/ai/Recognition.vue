@@ -22,12 +22,12 @@
     @support-input-event="modelCall"
     ></arg-form>
 
-    <div v-show="this.frames.length > 0 && form.supportInput != '视频输入'">
+    <div v-show="this.frames.length > 0 && form.supportInput != InputMode.VIDEO_URL">
       <el-image v-for="(output_url, index) in this.outputUrls" :key="index" :src="output_url" class="output-img">
         <div slot="error" class="image-slot">检测结果</div>
       </el-image>
     </div>
-    <div v-show="this.frames.length == 0 && form.supportInput != '视频输入' && form.supportInput !='摄像头输入'">
+    <div v-show="this.frames.length == 0 && form.supportInput != InputMode.VIDEO_URL && form.supportInput != InputMode.CAMERA">
       <el-image :src="''" class="output-img">
         <div slot="error" class="image-slot">检测结果</div>
       </el-image>
@@ -40,7 +40,7 @@
       </video>
     </div>
 
-    <video v-show="form.supportInput === '视频输入'" :src="outputUrl" controls width="auto" height="auto">
+    <video v-show="form.supportInput === InputMode.VIDEO_URL" :src="outputUrl" controls width="auto" height="auto">
     </video>
 
     <video-progress
@@ -77,7 +77,6 @@ import UploadFile from '../common/UploadFile.vue'
 import ArgForm from '../common/ArgForm.vue'
 import { io } from "socket.io-client"
 import VideoProgress from '../common/VideoProgress.vue'
-import { CameraMode } from '@/enums/camera_mode.js'
 import { InputMode } from '@/enums/input_mode.js'
 export default {
   name: "Recognition",
@@ -89,7 +88,6 @@ export default {
   data() {
     return {
       InputMode: InputMode,
-      CameraMode: CameraMode,
 
       frames: [],
       callDisabled: true,
@@ -100,7 +98,7 @@ export default {
       outputUrl: "",
       form: {
         urls: [],
-        supportInput: "单张图片输入",
+        supportInput: InputMode.SINGLE_PICTURE_URL,
         hyperparameters: [],
         cameraId: 0,
       },
@@ -161,7 +159,7 @@ export default {
           }
           return;
         }
-        if (this.form.supportInput == "摄像头输入") {
+        if (this.form.supportInput == InputMode.CAMERA) {
           let namespace = res.data;
           
           const videoElement = this.$refs.webrtcStreamerVideo;
@@ -197,7 +195,7 @@ export default {
               this.frames.push(jsonData);
             }
           });
-        } else if (this.form.supportInput == "视频输入") {
+        } else if (this.form.supportInput == InputMode.VIDEO_URL) {
           this.$refs.videoProgress.dialogOpen();
           this.videoProgressVisible = true;
           let namespace = res.data;
@@ -264,9 +262,8 @@ export default {
       this.outputUrls = [];
       this.outputUrl = "";
       this.videoSrc = "";
-      this.frames = [];
+      this.frames.splice(0, this.frames.length); // Vue响应式清空数组
 
-      this.outputUrl = "";
       this.videoJsonSrc = "";
       this.videoProgress = 0;
       this.videoTaskDone = false;
@@ -284,6 +281,7 @@ export default {
   width: 400px;
   border: 1px solid;
 }
+
 .image-slot {
   display: flex;
   align-items: center; /* 垂直居中 */

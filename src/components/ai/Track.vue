@@ -21,12 +21,18 @@
     @close-camera-event="handleCloseCameraEvent"
     ></arg-form>
 
-    <el-image v-show="form.supportInput === '摄像头输入' && cameraData === ''" :src="''" class="output-img">
-        <div slot="error" class="image-slot">摄像头输出</div>
-    </el-image>
-    <img v-show="form.supportInput === '摄像头输入' && cameraData != ''" :src="cameraData" alt="Image">
+    <div class="camera-video-container" v-show="form.supportInput === InputMode.CAMERA">
+      <video ref="webrtcStreamerVideo" id="webrtc-streamer-video" v-show="form.supportInput === InputMode.CAMERA" autoplay controls
+        disablePictureInPicture controlsList="nodownload nofullscreen" muted>
+      </video>
+      <div v-if="frames.length > 0">
+        <div v-for="(rect, index) in frames[0]" :key="index" class="camera-overlay" :style="{ left: rect.xmin + 'px', top: rect.ymin + 'px', width: rect.w + 'px', height: rect.h + 'px' }">
+          <span class="camera-overlay-text">cls{{ rect.label }} conf{{ rect.score }} track_id{{ rect.track_id }}</span>
+        </div>
+      </div>
+    </div>
 
-    <video v-show="form.supportInput === '视频输入'" :src="outputUrl" controls width="auto" height="auto">
+    <video v-show="form.supportInput === InputMode.VIDEO_URL" :src="outputUrl" controls width="auto" height="auto">
     </video>
 
     <video-progress
@@ -52,12 +58,15 @@
 </template>
 
 <script>
+import WebRtcStreamer from '../../../public/webrtcstreamer'
+import { webrtcURL } from '@/service.js'
 import Navigation from '../common/Navigation.vue'
 import ServiceManage from '../common/ServiceManage.vue'
 import UploadFile from '../common/UploadFile.vue'
 import ArgForm from '../common/ArgForm.vue'
 import { io } from "socket.io-client"
 import VideoProgress from '../common/VideoProgress.vue'
+import { InputMode } from '@/enums/input_mode.js'
 export default {
   name: "Track",
   components: {
@@ -67,13 +76,15 @@ export default {
   
   data() {
     return {
+      InputMode: InputMode,
+
       callDisabled: true,
       callLoading: false,
       services: [],
       outputUrl: "",
       form: {
         urls: [],
-        supportInput: "视频输入",
+        supportInput: InputMode.VIDEO_URL,
         hyperparameters: [],
         cameraId: 0,
       },
@@ -85,6 +96,9 @@ export default {
       cameraData: "",
       frames: [],
       socket: null,
+
+      webRtcServer: null,
+      cameraVideoPlayed: false,
     };
   },
   computed: {
@@ -144,14 +158,26 @@ export default {
           }
           return;
         }
-        if (this.form.supportInput == "摄像头输入") {
+        if (this.form.supportInput == InputMode.CAMERA) {
           let namespace = res.data;
+
+          const videoElement = this.$refs.webrtcStreamerVideo;
+          videoElement.addEventListener('play', () => {
+            this.cameraVideoPlayed = true;
+            this.callLoading = false;
+          });
+          videoElement.addEventListener('pause', () => {
+            this.cameraVideoPlayed = false;
+          });
+
+          this.webRtcServer = new WebRtcStreamer('webrtc-streamer-video', webrtcURL);
+          this.webRtcServer.connect(this.form.cameraId);
+
           console.log("connect to:", this.$axios.defaults.baseURL + namespace);
           const socket = io(this.$axios.defaults.baseURL + namespace);
           this.socket = socket;
           console.log("success connect ws");
-          socket.emit('camera_retrieve', "");
-          socket.on('camera_log', (msgs) => {
+          socket.on('log', (msgs) => {
             for (const msg of msgs) {
               this.$notify({
                 title: '调用错误',
@@ -160,22 +186,15 @@ export default {
               });
             }
           });
-          socket.on('camera_data', (msg) => {
-            if (msg == '') {
-              socket.emit('camera_retrieve', "");
-              return;
-            }
-            if (msg.startsWith('[')) {
+          socket.on('camera_data', async (msg) => {
+            if (msg && this.cameraVideoPlayed) {
+              const msgJsonObj = JSON.parse(msg);
+              const jsonData = msgJsonObj.data;
               this.frames = [];
-              let frame = JSON.parse(msg)
-              this.frames.push(frame);
-              // console.log(frame);
-            } else {
-              this.cameraData = "data:image/jpeg;base64," + msg;
+              this.frames.push(jsonData);
             }
-            socket.emit('camera_retrieve', "");
           });
-        } else if (this.form.supportInput == "视频输入") {
+        } else if (this.form.supportInput == InputMode.VIDEO_URL) {
           this.$refs.videoProgress.dialogOpen();
           this.videoProgressVisible = true;
           let namespace = res.data;
@@ -224,10 +243,15 @@ export default {
         this.socket = null;
         this.cameraData = "";
       }
+      if (this.webRtcServer) {
+        console.log("disconnect webRtc");
+        this.webRtcServer.disconnect();
+        this.webRtcServer = null;
+        this.$refs.webrtcStreamerVideo.src = "";
+      }
       this.outputUrl = "";
-      this.frames = [];
+      this.frames.splice(0, this.frames.length); // Vue响应式清空数组
 
-      this.outputUrl = "";
       this.videoJsonSrc = "";
       this.videoProgress = 0;
       this.videoTaskDone = false;
@@ -246,10 +270,28 @@ export default {
   width: 400px;
   border: 1px solid;
 }
+
 .image-slot {
   display: flex;
   align-items: center; /* 垂直居中 */
   justify-content: center; /* 水平居中 */
   height: 100%; /* 使容器高度占满 el-image，确保垂直居中生效 */
+}
+
+.camera-video-container {
+  position: relative;
+}
+
+.camera-overlay {
+  position: absolute;
+  border: 2px solid red;
+  box-sizing: border-box;
+}
+
+.camera-overlay-text {
+  position: absolute;
+  top: -20px;
+  left: 0px;
+  color: green;
 }
 </style>
