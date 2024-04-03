@@ -3,8 +3,12 @@ import { getToken } from "@/utils/storage.js";
 import router from '@/router/index.js';
 import Vue from 'vue';
 
-export const baseURL = "http://192.168.1.208:8086";
-export const webrtcURL = "http://192.168.1.208:8000";
+// export const baseURL = "http://192.168.1.208:8086";
+// export const webrtcURL = "http://192.168.1.208:8000";
+// export const srsWebrtcURL = "webrtc://192.168.1.208/live";
+export const srsWebrtcURL = "webrtc://localhost/live";
+export const baseURL = "http://localhost:8086";
+export const webrtcURL = "http://localhost:8000";
 
 export const Axios = axios.create({
   baseURL: baseURL,
