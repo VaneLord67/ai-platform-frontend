@@ -16,42 +16,30 @@
     :callDisabled="callDisabled"
     :callLoading="callLoading"
     :services="services"
-    :socket="socket"
     :form="form"
     @close-camera-event="handleCloseCameraEvent"
     @support-input-event="modelCall"
     ></arg-form>
 
-    <div v-show="this.frames.length > 0 && form.supportInput != InputMode.VIDEO_URL">
+    <div v-show="form.supportInput != InputMode.VIDEO_URL && form.supportInput != InputMode.CAMERA">
       <el-image v-for="(output_url, index) in this.outputUrls" :key="index" :src="output_url" class="output-img">
         <div slot="error" class="image-slot">检测结果</div>
       </el-image>
-    </div>
-    <div v-show="this.frames.length == 0 && form.supportInput != InputMode.VIDEO_URL && form.supportInput != InputMode.CAMERA">
-      <el-image :src="''" class="output-img">
+      <el-image v-show="this.frames.length == 0" :src="''" class="output-img">
         <div slot="error" class="image-slot">检测结果</div>
       </el-image>
     </div>
 
-
-    <div v-show="form.supportInput === InputMode.CAMERA">
-      <video ref="webrtcStreamerVideo" id="webrtc-streamer-video" v-show="form.supportInput === InputMode.CAMERA" autoplay controls
-        disablePictureInPicture controlsList="nodownload nofullscreen" muted>
-      </video>
-    </div>
-
-    <video v-show="form.supportInput === InputMode.VIDEO_URL" :src="outputUrl" controls width="auto" height="auto">
-    </video>
-
-    <video-progress
-      ref="videoProgress"
-      :progress="videoProgress" 
+    <WebrtcStreamerContainer 
+      ref="webrtcStreamerContainer"
+      @camera_data="handleCameraDataEvent" 
+      @play="handleWebrtcStreamerPlayEvent"
+      v-show="form.supportInput === InputMode.CAMERA"
     >
-    </video-progress>
+    </WebrtcStreamerContainer>
 
-    <div style="margin-top: 10px;" v-show="videoJsonSrc != ''">
-      <a :href="videoJsonSrc" target="_blank">jsonl文件下载地址</a>
-    </div>
+    <VideoContainer ref="videoContainer" v-show="form.supportInput === InputMode.VIDEO_URL">
+    </VideoContainer>
 
     <div v-for="(frame, index) in this.frames" :key="index"
       style="border: 1px solid; padding: 5px; margin-bottom: 10px;">
@@ -64,25 +52,22 @@
       </el-descriptions>
     </div>
 
-
   </navigation>
 </template>
 
 <script>
-import WebRtcStreamer from '../../../public/webrtcstreamer'
-import { webrtcURL } from '@/service.js'
 import Navigation from '../common/Navigation.vue'
 import ServiceManage from '../common/ServiceManage.vue'
 import UploadFile from '../common/UploadFile.vue'
 import ArgForm from '../common/ArgForm.vue'
-import { io } from "socket.io-client"
-import VideoProgress from '../common/VideoProgress.vue'
+import WebrtcStreamerContainer from '../common/WebrtcStreamerContainer.vue'
+import VideoContainer from '../common/VideoContainer.vue'
 import { InputMode } from '@/enums/input_mode.js'
 export default {
   name: "Recognition",
   components: {
     Navigation, ServiceManage, UploadFile, ArgForm,
-    VideoProgress, 
+    WebrtcStreamerContainer, VideoContainer,
   },
   
   data() {
@@ -92,25 +77,14 @@ export default {
       frames: [],
       callDisabled: true,
       callLoading: false,
-      cameraVideoPlayed: false,
       services: [],
       outputUrls: "",
-      outputUrl: "",
       form: {
         urls: [],
         supportInput: InputMode.SINGLE_PICTURE_URL,
         hyperparameters: [],
         cameraId: 0,
       },
-
-      videoJsonSrc: "",
-      videoProgress: 0,
-      videoTaskDone: false,
-
-      cameraData: "",
-      socket: null,
-
-      webRtcServer: null,
     };
   },
   watch: {
@@ -134,6 +108,14 @@ export default {
     },
     handleServicesEvent(services) {
       this.services = services;
+    },
+    handleCameraDataEvent(msgJsonObj) {
+      const jsonData = msgJsonObj.data;
+      this.frames = [];
+      this.frames.push(jsonData);
+    },
+    handleWebrtcStreamerPlayEvent() {
+      this.callLoading = false;
     },
     modelCall(supportInput) {
       this.clearResource();
@@ -160,113 +142,31 @@ export default {
           return;
         }
         if (this.form.supportInput == InputMode.CAMERA) {
-          let namespace = res.data;
-          
-          const videoElement = this.$refs.webrtcStreamerVideo;
-          videoElement.addEventListener('play', () => {
-            this.cameraVideoPlayed = true;
-            this.callLoading = false;
-          });
-          videoElement.addEventListener('pause', () => {
-            this.cameraVideoPlayed = false;
-          });
-
-          this.webRtcServer = new WebRtcStreamer('webrtc-streamer-video', webrtcURL);
-          this.webRtcServer.connect(this.form.cameraId);
-
-          console.log("connect to:", this.$axios.defaults.baseURL + namespace)
-          const socket = io(this.$axios.defaults.baseURL + namespace);
-          this.socket = socket;
-          console.log("success connect ws")
-          socket.on('log', (msgs) => {
-            for (const msg of msgs) {
-              this.$notify({
-                title: '调用错误',
-                message: msg,
-                type: 'warning',
-              });
-            }
-          });
-          socket.on('camera_data', (msg) => {
-            if (msg && this.cameraVideoPlayed) {
-              const msgJsonObj = JSON.parse(msg);
-              const jsonData = msgJsonObj.data;
-              this.frames = [];
-              this.frames.push(jsonData);
-            }
-          });
+          this.$refs.webrtcStreamerContainer.activate(res.data, this.form.cameraId);
         } else if (this.form.supportInput == InputMode.VIDEO_URL) {
-          this.$refs.videoProgress.dialogOpen();
-          this.videoProgressVisible = true;
-          let namespace = res.data;
-          console.log("connect to:", this.$axios.defaults.baseURL + namespace);
-          const socket = io(this.$axios.defaults.baseURL + namespace);
-          this.socket = socket;
-          console.log("success connect ws")
-          socket.on('video_log', (msgs) => {
-            for (const msg of msgs) {
-              this.$notify({
-                title: '调用错误',
-                message: msg,
-                type: 'warning',
-              });
-            }
-          });
-          socket.on('progress_data', (msg) => {
-            this.videoProgress = Math.floor(Number(msg) * 100);
-            if (!this.videoTaskDone) {
-              socket.emit('progress_retrieve', "");
-            }
-          });
-          socket.on('video_task_done', (msgs) => {
-            this.videoTaskDone = true;
-            this.$refs.videoProgress.dialogClose();
-            if (msgs.length != 2) {
-              console.log("video task package length error");
-              return;
-            }
-            this.outputUrl = msgs[0];
-            this.videoJsonSrc = msgs[1];
-          });
-          socket.emit('progress_retrieve', "");
+          this.$refs.videoContainer.activate(res.data);
         } else {
           this.frames = res.data.frames;
           this.outputUrls = [];
           this.form.urls.forEach(e => {
             this.outputUrls.push(e.value);
           });
-          if (this.outputUrls.length > 0) {
-            this.outputUrl = this.outputUrls[0];
-          }
         }
       }).finally(() => {
-        this.callLoading = false;
+        if (this.form.supportInput != InputMode.CAMERA) {
+          this.callLoading = false;
+        }
       });
     },
     handleCloseCameraEvent() {
       this.clearResource();
     },
     clearResource() {
-      if (this.socket) {
-        console.log("disconnect ws");
-        this.socket.disconnect();
-        this.socket = null;
-        this.cameraData = "";
-      }
-      if (this.webRtcServer) {
-        console.log("disconnect webRtc");
-        this.webRtcServer.disconnect();
-        this.webRtcServer = null;
-        this.$refs.webrtcStreamerVideo.src = "";
-      }
-      this.outputUrls = [];
-      this.outputUrl = "";
-      this.videoSrc = "";
-      this.frames.splice(0, this.frames.length); // Vue响应式清空数组
+      this.$refs.webrtcStreamerContainer.clearResource();
+      this.$refs.videoContainer.clearResource();
 
-      this.videoJsonSrc = "";
-      this.videoProgress = 0;
-      this.videoTaskDone = false;
+      this.outputUrls = [];
+      this.frames = [];
     },
   },
   beforeDestroy() {

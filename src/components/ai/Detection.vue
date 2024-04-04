@@ -1,16 +1,26 @@
 <template>
   <navigation>
 
-    <service-manage serviceName="detection_service" @call-disabled-event="handleCallDisabledEvent"
-      @hyperparameter-event="handleHyperparameterEvent" @services-event="handleServicesEvent"></service-manage>
+    <service-manage 
+      serviceName="detection_service" 
+      @call-disabled-event="handleCallDisabledEvent"
+      @hyperparameter-event="handleHyperparameterEvent" 
+      @services-event="handleServicesEvent"
+    ></service-manage>
 
     <div style="font-weight: bold; padding-top: 20px; padding-bottom: 20px;">
       上传
     </div>
     <UploadFile></UploadFile>
 
-    <arg-form :callDisabled="callDisabled" :callLoading="callLoading" :services="services" :socket="socket" :form="form"
-      @close-camera-event="handleCloseCameraEvent" @support-input-event="modelCall"></arg-form>
+    <arg-form 
+      :callDisabled="callDisabled" 
+      :callLoading="callLoading" 
+      :services="services" 
+      :form="form"
+      @close-camera-event="handleCloseCameraEvent" 
+      @support-input-event="modelCall"
+    ></arg-form>
 
     <div v-show="this.outputUrls.length > 0 && form.supportInput != InputMode.VIDEO_URL">
       <el-image v-for="(output_url, index) in this.outputUrls" :key="index" :src="output_url" class="output-img">
@@ -115,10 +125,7 @@ export default {
 
       callDisabled: true,
       callLoading: false,
-      modelName: "",
-      modelField: "",
       form: {
-        url: "",
         urls: [],
         supportInput: InputMode.SINGLE_PICTURE_URL,
         hyperparameters: [],
@@ -131,14 +138,12 @@ export default {
       videoTaskDone: false,
       frames: [],
       services: [],
-      cameraData: "",
       socket: null,
       cameraVideoPlayed: false,
 
       webRtcServer: null,
       videoLagMode: VideoLagMode.NONE,
       averageDiffTimestamp: 0,
-      cacheDuration: 1000,
 
       mpegtsPlayer: null,
       lastEstimateSEITimeStamp: 0,
@@ -147,17 +152,7 @@ export default {
       jswebrtcPlayer: null,
 
       cameraMode: CameraMode.WEBRTC_STREAMER,
-      options: [
-        {
-          value: CameraMode.WEBRTC_STREAMER,
-        }, 
-        {
-          value: CameraMode.PYTHON_PUBLISH_STREAM,
-        }, 
-        {
-          value: CameraMode.SEI,
-        }
-      ],
+      options: Object.values(CameraMode).map(value => ({ value })),
     };
   },
   watch: {
@@ -387,7 +382,7 @@ export default {
             case VideoLagMode.DELAY_VIDEO:
               this.frames = [];
               this.frames.push(jsonData);
-              this.setWebrtcDelay(this.cacheDuration / 1000);
+              this.setWebrtcDelay((webRtcTimestamp - jsonTimestamp) / 1000);
               break;
             default:
               console.log("unsupport videoLagMode");
@@ -512,6 +507,8 @@ export default {
       }
       if (this.cameraVideoPlayed) {
         requestAnimationFrame(this.seiDrawCachedBoxes);
+      } else {
+        this.frames = [];
       }
     },
     sinkSEIFromPlayer(seiMessage, seiTime) {
@@ -568,7 +565,6 @@ export default {
         console.log("disconnect ws");
         this.socket.disconnect();
         this.socket = null;
-        this.cameraData = "";
       }
       if (this.webRtcServer) {
         console.log("disconnect webRtc");
@@ -593,7 +589,7 @@ export default {
       this.videoJsonSrc = "";
       this.videoProgress = 0;
       this.videoTaskDone = false;
-      this.frames.splice(0, this.frames.length); // Vue响应式清空数组
+      this.frames = [];
     },
   },
   mounted() {
@@ -605,31 +601,17 @@ export default {
 </script>
 
 <style>
-.flex-container {
-  display: flex;
-}
-.input-form {
-  width: 48%;
-  margin-right: 50px;
-}
 .output-img {
   height: 400px;
   width: 400px;
   border: 1px solid;
 }
+
 .image-slot {
   display: flex;
   align-items: center; /* 垂直居中 */
   justify-content: center; /* 水平居中 */
   height: 100%; /* 使容器高度占满 el-image，确保垂直居中生效 */
-}
-.service-statistic {
-  display: flex;
-  justify-content: center; /* 水平居中 */
-}
-.box-css::v-deep.el-collapse-item__header {
-  font-size: 20px;
-  font-weight: 700;
 }
 
 .camera-video-container {
