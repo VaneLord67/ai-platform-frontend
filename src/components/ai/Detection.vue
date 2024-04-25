@@ -144,6 +144,8 @@ export default {
       webRtcServer: null,
       videoLagMode: VideoLagMode.NONE,
       averageDiffTimestamp: 0,
+      ntpRequestTimeMs: 0,
+      ntpOffset: 0,
 
       mpegtsPlayer: null,
       lastEstimateSEITimeStamp: 0,
@@ -316,6 +318,16 @@ export default {
       this.webRtcServer = new WebRtcStreamer('webrtc-streamer-video', webrtcURL);
       this.webRtcServer.connect(this.form.cameraId);
 
+      socket.on('time_sync', (serverTimeMs) => {
+        this.syncTime(this.ntpRequestTimeMs, serverTimeMs);
+        if (this.socket) {
+          setTimeout(() => {
+            this.intervalSyncTime(socket);
+          }, 10000);
+        }
+      });
+      this.intervalSyncTime(socket);
+
       socket.on('camera_data', async (msg) => {
         if (msg && this.cameraVideoPlayed) {
           const msgJsonObj = JSON.parse(msg);
@@ -323,6 +335,7 @@ export default {
           const jsonData = msgJsonObj.data;
           
           let webRtcTimestamp = await this.getWebrtcTimestamp();
+          webRtcTimestamp += this.ntpOffset;
 
           let diffTimestamp = jsonTimestamp - webRtcTimestamp;
           // 使用加权移动平均算法来更新平均差值，防止因瞬时的大延时造成的抖动
@@ -543,21 +556,40 @@ export default {
       videoReceiver.playoutDelayHint = delay;
     },
     async getWebrtcTimestamp() {
+      let webRtcTimestamp = 0;
       try {
-        const stats = await this.webRtcServer.pc.getStats(null);
-        let webRtcTimestamp = 0;
-        stats.forEach(report => {
-            if (report.type === 'inbound-rtp') {
-                if (report.kind === 'video') {
-                  webRtcTimestamp = report.timestamp;
-                }
-            }
+        this.webRtcServer.pc.getReceivers().forEach(receiver => {
+          receiver.getSynchronizationSources().forEach(ssrc => {
+            webRtcTimestamp = ssrc.timestamp;
+          });
         });
+        // const stats = await this.webRtcServer.pc.getStats(null);
+        // stats.forEach(report => {
+        //     if (report.type === 'inbound-rtp') {
+        //         if (report.kind === 'video') {
+        //           webRtcTimestamp = report.timestamp;
+        //         }
+        //     }
+        // });
         return webRtcTimestamp;
       } catch (e) {
         console.log("error: ", e);
         return 0;
       }
+    },
+    intervalSyncTime(socket) {
+      this.ntpRequestTimeMs = this.now();
+      console.log("emit");
+      socket.emit('time_sync_request');
+    },
+    syncTime(requestTimeMs, serverTimeMs) {
+      let now = this.now();
+      let offset = ((serverTimeMs - requestTimeMs) + (serverTimeMs - now)) / 2;
+      console.log("offset:", offset);
+      this.ntpOffset = offset;
+    },
+    now() {
+      return Date.now();
     },
     clearResource() {
       console.log("clear resource...");
